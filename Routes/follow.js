@@ -159,7 +159,8 @@ followRoute.get("/user/followingList/:user_id", async (req, res) => {
 
       console.log(
         loggedInUserFollowDoc,
-        "loggedInUserFollowDocloggedInUserFollowDoc", loggedInuser
+        "loggedInUserFollowDocloggedInUserFollowDoc",
+        loggedInuser
       );
 
       let loggedInUserFollowYou = false;
@@ -185,7 +186,7 @@ followRoute.get("/user/followingList/:user_id", async (req, res) => {
         const userType = followDoc.followingType[index]; // Get corresponding user type
         const model = userType === "userModel" ? userModel : gymModel;
 
-        return model.findById(followedUserId, "fullName profileImage").lean();
+        return model.findById(followedUserId, "fullName profileImage userType").lean();
       })
     );
 
@@ -220,27 +221,6 @@ followRoute.get("/user/followersList/:user_id", async (req, res) => {
       });
     }
 
-    // let loggedInUserFollowYou = false;
-    // if (loggedInuser.toString() !== user_id.toString()) {
-    //   const loggedInUserFollowDoc = await followModel
-    //     .findById(loggedInuser)
-    //     .select("following")
-    //     .lean();
-
-    //   loggedInUserFollowDoc?.following.forEach((user) => {
-    //     if (user._id == user_id) {
-    //       loggedInUserFollowYou = true;
-    //     }
-    //   });
-
-    //   if (!loggedInUserFollowYou) {
-    //     return res.status(200).json({
-    //       message:
-    //         "YOU CAN'T ACCESS THE FOLLOWERS LIST OF A USER WHO DOESN'T FOLLOW YOU",
-    //     });
-    //   }
-    // }
-
     if (loggedInuser.toString() !== user_id.toString()) {
       const loggedInUserFollowDoc = await followModel
         .findById(loggedInuser)
@@ -267,12 +247,14 @@ followRoute.get("/user/followersList/:user_id", async (req, res) => {
         const followerType = userFollowDoc.followerType[index]; // Get corresponding type
         const model = followerType === "userModel" ? userModel : gymModel;
 
-        return model.findById(followerId, "fullName profileImage").lean();
+        return model.findById(followerId, "fullName profileImage userType").lean();
       })
     );
 
+    console.log("userFollowersData", userFollowersData);
+
     return res.status(200).json({
-      userFollowersData: userFollowersData.filter((user) => user), // Remove null values
+      userFollowersData: userFollowersData.filter((user) => user),
     });
   } catch (error) {
     console.error("Error fetching followers list:", error);

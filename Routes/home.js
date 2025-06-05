@@ -185,12 +185,22 @@ homeRoute.get("/gym/dashboard/", async (req, res) => {
     // Fetch the gym data associated with the user
     const Mygymdata = await gymModel.findById(req?.user?._id).populate({
       path: "joinedBy.user",
-      select: "fullName profileImage",
+      select: "fullName profileImage userType",
     });
+
+    // console.log("Mygymdata",Mygymdata)
 
     if (!Mygymdata) {
       return res.status(404).json({ message: "GYM_NOT_FOUND" });
     }
+
+    if (Mygymdata.userType !== "gymModel") {
+      console.log("Mygymdata", Mygymdata);
+      return res.status(401).json({
+        message: "YOU OWN A OWNERTYPE ACCOUNT CANT ACCESS A USER DASHBOARD",
+      });
+    }
+
     let followersList = [];
     let followingList = [];
     let followersCount = 0;
@@ -702,6 +712,12 @@ homeRoute.get("/user/dashboard", async (req, res) => {
     return res.status(404).json({ message: "USER_NOT_FOUND" });
   }
 
+  if (userData.userType !== "userModel") {
+    return res.status(401).json({
+      message: "YOU OWN A USERTYPE ACCOUNT CANT ACCESS A GYM DASHBOARD",
+    });
+  }
+
   let showEditPage = false;
   if (req.user._id === id) {
     showEditPage = true;
@@ -876,7 +892,7 @@ homeRoute.post("/update-dashboard-personalDetails", async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Fetch user or gym data based on user type
+    // Try to fetch user from either userModel or gymModel
     let data =
       (await userModel.findById(userId)) || (await gymModel.findById(userId));
 
@@ -884,69 +900,82 @@ homeRoute.post("/update-dashboard-personalDetails", async (req, res) => {
       return res.status(404).json({ message: "USER_NOT_FOUND" });
     }
 
-    // Determine user type and update accordingly
     const { userType } = data;
-    const updates = {};
+    console.log("userType:", userType);
 
+    let resdata = {};
+    const { profileImage } = req.body;
+    let cloudImageURL = null;
+
+    // Optional image upload
+    if (profileImage && profileImage.startsWith("data:image")) {
+      try {
+        cloudImageURL = await uploadToCloudinary(profileImage);
+      } catch (error) {
+        console.error("Cloudinary Upload Error:", error);
+        return res.status(500).json({
+          message: "CLOUDINARY_UPLOAD_FAILED",
+          error: error.message,
+        });
+      }
+    }
+
+    // Update logic based on user type
     if (userType === "gymModel") {
-      const {
+      const { fullName, contactNumber, description, monthlyCharge } = req.body;
+
+      console.log("Updating gymModel with:", {
         fullName,
         contactNumber,
-        description,
         monthlyCharge,
-        profileImage,
-      } = req.body;
+        description,
+        cloudImageURL,
+      });
 
-      if (profileImage) {
-        let cloudImageURL = null;
-
-        // If a file is uploaded, upload it to Cloudinary
-        if (profileImage && profileImage.startsWith("data:image")) {
-          try {
-            cloudImageURL = await uploadToCloudinary(profileImage);
-          } catch (error) {
-            return res.status(500).send("Error uploading image to Cloudinary.");
-          }
-        }
-        updates.profileImage = cloudImageURL;
-      }
-      if (fullName) updates.fullName = fullName;
-      if (contactNumber) updates.contactNumber = contactNumber;
-      if (description) updates.description = description;
-      if (monthlyCharge !== undefined) updates.monthlyCharge = monthlyCharge;
-
-      await gymModel.updateOne({ _id: userId }, { $set: updates });
+      resdata = await gymModel.findOneAndUpdate(
+        { _id: userId },
+        {
+          fullName,
+          profileImage: cloudImageURL || data.profileImage,
+          description,
+          contactNumber,
+          monthlyCharge,
+        },
+        { new: true }
+      );
     } else {
-      const { fullName, contactNumber, bio, profileImage } = req.body;
+      const { fullName, contactNumber, bio } = req.body;
 
-      if (profileImage) {
-        let cloudImageURL = null;
+      console.log("Updating userModel with:", {
+        fullName,
+        contactNumber,
+        bio,
+        cloudImageURL,
+      });
 
-        // If a file is uploaded, upload it to Cloudinary
-        if (profileImage && profileImage.startsWith("data:image")) {
-          try {
-            cloudImageURL = await uploadToCloudinary(profileImage);
-          } catch (error) {
-            return res.status(500).send("Error uploading image to Cloudinary.");
-          }
-        }
-        updates.profileImage = cloudImageURL;
-      }
-      if (profileImage) updates.profileImage = profileImage;
-      if (fullName) updates.fullName = fullName;
-      if (contactNumber) updates.contactNumber = contactNumber;
-      if (bio) updates.bio = bio;
-
-      await userModel.updateOne({ _id: userId }, { $set: updates });
+      resdata = await userModel.findOneAndUpdate(
+        { _id: userId },
+        {
+          fullName,
+          profileImage: cloudImageURL || data.profileImage,
+          bio,
+          contactNumber,
+        },
+        { new: true }
+      );
     }
+
+    console.log("Update result:", resdata);
 
     return res
       .status(200)
       .json({ message: "USER_PROFILE_UPDATED_SUCCESSFULLY" });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "INTERNAL_SERVER_ERROR", error: error.message });
+    console.error("Unexpected Server Error:", error);
+    return res.status(500).json({
+      message: "INTERNAL_SERVER_ERROR",
+      error: error.message,
+    });
   }
 });
 
