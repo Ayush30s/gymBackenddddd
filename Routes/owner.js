@@ -237,7 +237,7 @@ ownerRoute.post("/signin", async (req, res) => {
 
     const token = createToken(user);
     console.log(token, "----------------------------->");
-    res.cookie("token", token).json({
+    res.cookie("token", token, { httpOnly: true, secure: true }).json({
       message: "USER_SIGNIN_SUCCESSFUL",
       user: {
         userId: user._id,
