@@ -236,7 +236,7 @@ ownerRoute.post("/signin", async (req, res) => {
     }
 
     const token = createToken(user);
-    console.log(token.length, "----------------------------->");
+    console.log(token, "----------------------------->");
     res
       .cookie("token", token, {
         httpOnly: true, // Prevent access from JavaScript
