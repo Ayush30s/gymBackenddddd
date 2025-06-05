@@ -237,21 +237,15 @@ ownerRoute.post("/signin", async (req, res) => {
 
     const token = createToken(user);
     console.log(token, "----------------------------->");
-    res
-      .cookie("token", token, {
-        httpOnly: true, // Prevent access from JavaScript
-        secure: false, // Change to true in production (HTTPS only)
-        sameSite: "strict",
-      })
-      .json({
-        message: "USER_SIGNIN_SUCCESSFUL",
-        user: {
-          userId: user._id,
-          fullName: user.fullName,
-          email: user.email,
-          userType: user.userType,
-        },
-      });
+    res.cookie("token", token).json({
+      message: "USER_SIGNIN_SUCCESSFUL",
+      user: {
+        userId: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        userType: user.userType,
+      },
+    });
   } catch (error) {
     return res.status(500).json({ message: "USER_SIGNIN_FAILED" });
   }
