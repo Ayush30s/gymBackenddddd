@@ -2,6 +2,7 @@ const { verifyToken } = require("../services/auth");
 
 function authenticateUser(cookieName) {
   return (req, res, next) => {
+    console.log("All cookies in request:", req.cookies);
     const tokenCookieValue = req.cookies[cookieName];
     console.log("authenticateUser -> ", tokenCookieValue);
 
