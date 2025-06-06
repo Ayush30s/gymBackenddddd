@@ -54,6 +54,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("request accepted", (data) => {
+    console.log("requser acctepted");
     const userSocketId = userIdToSocketId[data.to._id];
     console.log("request accepted11", userSocketId);
     socket.to(userSocketId).emit("ownerAccepted", data);
