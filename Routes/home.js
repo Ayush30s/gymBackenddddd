@@ -458,6 +458,8 @@ homeRoute.post("/:gymId/joingym", async (req, res) => {
       }
     });
 
+    console.log("isUserJoined", isUserJoined);
+
     // If the user has not joined the gym
     if (!isUserJoined) {
       // Add the user to the gym's joinedBy array
@@ -538,6 +540,7 @@ homeRoute.post("/gym/mark-attendance", async (req, res) => {
   try {
     const decoded = JWT.verify(token, QR_SECRET);
     const { gymId, date, sessionId } = decoded;
+    console.log("decode", gymId, date, sessionId, decoded)
 
     if (currentDate != date) {
       return res.status(400).json({ message: "SOMETHING WENT WRONG" });

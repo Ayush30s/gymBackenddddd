@@ -32,64 +32,64 @@ workoutRouter.post("/ai-assistance", async (req, res) => {
       injuriesLimitations,
     } = req.body;
 
-//     const chatGptPrompt = `You must respond with a valid JSON array of objects only. No explanations or extra text.
+    //     const chatGptPrompt = `You must respond with a valid JSON array of objects only. No explanations or extra text.
 
-// I want you to act as a fitness assistant that recommends exercises in the following JavaScript object format:
+    // I want you to act as a fitness assistant that recommends exercises in the following JavaScript object format:
 
-// {
-//   exerciseName: "",
-//   focusPart: "",
-//   time: <number>, // duration in minutes
-//   pushedAt: new Date(),
-//   caloriesBurned: "<number>",
-//   difficulty: "",
-//   sets: <number>,
-//   reps: <number>,
-//   exerciseVideoURL: "",
-//   equipment: "",
-//   restTime: "",
-//   muscleGroup: "",
-//   timeLimit: "",
-//   description: "",
-//   videoDuration: ""
-// }
+    // {
+    //   exerciseName: "",
+    //   focusPart: "",
+    //   time: <number>, // duration in minutes
+    //   pushedAt: new Date(),
+    //   caloriesBurned: "<number>",
+    //   difficulty: "",
+    //   sets: <number>,
+    //   reps: <number>,
+    //   exerciseVideoURL: "",
+    //   equipment: "",
+    //   restTime: "",
+    //   muscleGroup: "",
+    //   timeLimit: "",
+    //   description: "",
+    //   videoDuration: ""
+    // }
 
-// Based on the user data below, recommend **three appropriate exercises** that match their profile. Ensure:
-// - The \`description\` is motivational and explains the benefit.
-// - \`difficulty\` aligns with the user's experience level.
-// - \`equipment\` does not include anything outside their available equipment.
-// - Exercises should be safe if any injuries or limitations are mentioned.
+    // Based on the user data below, recommend **three appropriate exercises** that match their profile. Ensure:
+    // - The \`description\` is motivational and explains the benefit.
+    // - \`difficulty\` aligns with the user's experience level.
+    // - \`equipment\` does not include anything outside their available equipment.
+    // - Exercises should be safe if any injuries or limitations are mentioned.
 
-// User Data:
-// - Height: ${height}
-// - Weight: ${weight}
-// - Workout Frequency: ${workoutFrequency}
-// - Fitness Goal: ${fitnessGoal}
-// - Experience Level: ${experienceLevel}
-// - Available Equipment: ${availableEquipment}
-// - Injuries/Limitations: ${injuriesLimitations}
+    // User Data:
+    // - Height: ${height}
+    // - Weight: ${weight}
+    // - Workout Frequency: ${workoutFrequency}
+    // - Fitness Goal: ${fitnessGoal}
+    // - Experience Level: ${experienceLevel}
+    // - Available Equipment: ${availableEquipment}
+    // - Injuries/Limitations: ${injuriesLimitations}
 
-// Return only a valid JSON array of 3 exercise objects, formatted exactly as shown above.`;
+    // Return only a valid JSON array of 3 exercise objects, formatted exactly as shown above.`;
 
-//     const openaiResponse = await fetch(
-//       "https://api.openai.com/v1/chat/completions",
-//       {
-//         method: "POST",
-//         headers: {
-//           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-//           "Content-Type": "application/json",
-//         },
-//         body: JSON.stringify({
-//           model: "gpt-3.5-turbo",
-//           messages: [{ role: "user", content: chatGptPrompt }],
-//           temperature: 0.7,
-//         }),
-//       }
-//     );
+    //     const openaiResponse = await fetch(
+    //       "https://api.openai.com/v1/chat/completions",
+    //       {
+    //         method: "POST",
+    //         headers: {
+    //           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    //           "Content-Type": "application/json",
+    //         },
+    //         body: JSON.stringify({
+    //           model: "gpt-3.5-turbo",
+    //           messages: [{ role: "user", content: chatGptPrompt }],
+    //           temperature: 0.7,
+    //         }),
+    //       }
+    //     );
 
-//     const data = await openaiResponse.json();
+    //     const data = await openaiResponse.json();
 
-//     const aiMessage = data.choices?.[0]?.message?.content;
+    //     const aiMessage = data.choices?.[0]?.message?.content;
 
     // Attempt to parse AI output
     const exercises = [
@@ -148,7 +148,7 @@ workoutRouter.post("/ai-assistance", async (req, res) => {
         videoDuration: "3:00",
       },
     ];
-    
+
     // try {
     //   exercises = JSON.parse(aiMessage);
     // } catch (jsonError) {

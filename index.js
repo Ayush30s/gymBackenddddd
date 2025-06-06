@@ -41,6 +41,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("request received", async (data) => {
+    console.log("-----------", data);
     const { reqto, reqby, requestType, reqtoType, reqbyType, status } = data;
     console.log(data);
     const reqtoSocketId = gymIdToOwnerSocketId[reqto];
@@ -54,7 +55,7 @@ io.on("connection", (socket) => {
 
   socket.on("request accepted", (data) => {
     const userSocketId = userIdToSocketId[data.to._id];
-    console.log("request accepted", userSocketId);
+    console.log("request accepted11", userSocketId);
     socket.to(userSocketId).emit("ownerAccepted", data);
   });
 
