@@ -59,7 +59,7 @@ const requestSchema = new mongoose.Schema(
 );
 
 requestSchema.index(
-  { reqto: 1, reqby: 1, requestType: 1, status: 1 },
+  { reqto: 1, reqby: 1, requestType: 1, status: 1, createdAt: 1 },
   { unique: true }
 );
 

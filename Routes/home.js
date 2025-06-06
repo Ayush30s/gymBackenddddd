@@ -496,6 +496,12 @@ homeRoute.post("/:gymId/leavegym", async (req, res) => {
       $pull: { joinedBy: { user: userId.toString() } },
     });
 
+    // Remove the attendence of the user
+    await attendenceModel.deleteMany({
+      userId: req.user._id,
+      gymId: gymId,
+    });
+
     const shiftData = await ShiftModel.find({ gym: gymId });
 
     if (shiftData && shiftData.length > 0) {
@@ -540,7 +546,7 @@ homeRoute.post("/gym/mark-attendance", async (req, res) => {
   try {
     const decoded = JWT.verify(token, QR_SECRET);
     const { gymId, date, sessionId } = decoded;
-    console.log("decode", gymId, date, sessionId, decoded)
+    console.log("decode", gymId, date, sessionId, decoded);
 
     if (currentDate != date) {
       return res.status(400).json({ message: "SOMETHING WENT WRONG" });

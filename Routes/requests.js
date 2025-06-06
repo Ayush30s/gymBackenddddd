@@ -131,26 +131,36 @@ RequestRouter.post("/handleRequest", async (req, res) => {
 
 RequestRouter.put("/updatejoinstatus", async (req, res) => {
   try {
-    const data = req.body;
-    console.log("data", data);
+    const { requestId, status } = req.body;
+    console.log("data--------------================", req.body);
 
-    if (!data.requestId) {
-      return res.status(400).json({ error: "requestId is required" });
+    if (!requestId || !status) {
+      return res
+        .status(400)
+        .json({ error: "requestId and status are required" });
     }
 
-    const updatedRequest = await RequestModel.findOneAndUpdate(
-      { _id: data.requestId },
-      { status: data.status },
-      { new: true }
-    );
-
-    if (!updatedRequest) {
-      return res.status(404).json({ debug: "REQUEST NOT FOUND" });
+    // Step 1: Find the current request
+    const currentRequest = await RequestModel.findById(requestId);
+    if (!currentRequest) {
+      return res.status(404).json({ error: "Request not found" });
     }
+
+    // Step 2: Find and delete older requests for same reqby, reqto, requestType
+    await RequestModel.deleteMany({
+      reqby: currentRequest.reqby,
+      reqto: currentRequest.reqto,
+      requestType: currentRequest.requestType,
+      createdAt: { $lt: currentRequest.createdAt },
+    });
+
+    // Step 3: Update the status of the current request
+    currentRequest.status = status;
+    await currentRequest.save();
 
     res.status(200).json({
-      message: "Request status updated successfully",
-      request: updatedRequest,
+      message: "Older request deleted (if any), current request status updated",
+      request: currentRequest,
     });
   } catch (error) {
     console.error("Error updating join request:", error);
