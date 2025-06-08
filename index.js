@@ -22,7 +22,7 @@ const http = require("http").createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(http, {
   cors: {
-    origin: "https://gym-frontendnew-namw.vercel.app",
+    origin: "https://gym-frontendnew-lnl5.vercel.app",
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -69,7 +69,7 @@ io.on("connection", (socket) => {
 
 app.use(
   cors({
-    origin: "https://gym-frontendnew-namw.vercel.app",
+    origin: "https://gym-frontendnew-lnl5.vercel.app",
     credentials: true,
   })
 );
