@@ -132,7 +132,6 @@ RequestRouter.post("/handleRequest", async (req, res) => {
 RequestRouter.put("/updatejoinstatus", async (req, res) => {
   try {
     const { requestId, status } = req.body;
-    console.log("data--------------================", req.body);
 
     if (!requestId || !status) {
       return res
@@ -151,6 +150,7 @@ RequestRouter.put("/updatejoinstatus", async (req, res) => {
       reqby: currentRequest.reqby,
       reqto: currentRequest.reqto,
       requestType: currentRequest.requestType,
+      status: { $in: ["accepted", "rejected"] },
       createdAt: { $lt: currentRequest.createdAt },
     });
 
