@@ -41,7 +41,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("request received", async (data) => {
-    console.log("-----------", data);
     const { reqto, reqby, requestType, reqtoType, reqbyType, status } = data;
     console.log(data);
     const reqtoSocketId = gymIdToOwnerSocketId[reqto];

@@ -240,7 +240,7 @@ ownerRoute.post("/signin", async (req, res) => {
     res
       .cookie("token", token, {
         httpOnly: true,
-        sameSite: "none", // allow cross-site cookie
+        sameSite: "None",
         secure: true, // required for SameSite=None; backend must be HTTPS
         maxAge: 24 * 60 * 60 * 1000,
       })
