@@ -20,12 +20,16 @@ const PORT = 7000;
 const http = require("http").createServer(app);
 
 const { Server } = require("socket.io");
+
 const io = new Server(http, {
   cors: {
     origin: "https://gym-frontendnew-lnl5.vercel.app",
     methods: ["GET", "POST"],
     credentials: true,
   },
+  transports: ["websocket"],
+  pingTimeout: 20000,
+  pingInterval: 25000,
 });
 
 const gymIdToOwnerSocketId = {};
