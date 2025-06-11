@@ -402,6 +402,24 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
       });
     }
 
+    let isJoinRequestAccepted = false;
+    let isPaymentDone = false;
+    let isJoinRequestPending = false;
+
+    //check if payment is made for this gym
+    const requestData = await RequestModel.findOne({
+      reqby: userId,
+      reqto: gymId,
+      requestType: "join",
+      status: "accepted",
+    });
+
+    if (requestData) {
+      isJoinRequestAccepted = requestData?.status;
+      isJoinRequestPending = !isJoinRequestAccepted
+      isPaymentDone = requestData?.paymentStatus === "paid";
+    }
+
     return res.status(200).json({
       message: "GYM_PAGE_DATA_FETCHED_SUCCESSFUL",
       gymData: gymData,
@@ -418,6 +436,9 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
       GymFollowUser: GymFollowUser,
       showFollowButton: showFollowButton,
       attendenceStatus: attendenceStatus,
+      isPaymentDone: isPaymentDone,
+      isJoinRequestAccepted: isJoinRequestAccepted,
+      isJoinRequestPending: isJoinRequestPending,
     });
   } catch (error) {
     console.log(error);
@@ -486,6 +507,14 @@ homeRoute.post("/:gymId/leavegym", async (req, res) => {
   const userId = req.user._id;
 
   try {
+    const data = await RequestModel.findOneAndDelete({
+      reqby: userId,
+      reqto: gymId,
+      status: "accepted",
+      requestType: "join",
+    });
+
+    console.log("data", data);
     // Remove gym from the user's joinedGym array
     await userModel.findByIdAndUpdate(userId, {
       $pull: { joinedGym: gymId },

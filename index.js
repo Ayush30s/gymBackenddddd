@@ -14,6 +14,7 @@ const { blogRouter } = require("./Routes/blog.js");
 const { listingRouter } = require("./Routes/listing.js");
 const { authenticateUser } = require("./Middleware/authentication.js");
 const requestRoute = require("./Routes/requests.js");
+const paymentRouter = require("./Routes/payment.js");
 
 const app = express();
 const PORT = 7000;
@@ -98,6 +99,7 @@ app.use("/request", followRoute);
 app.use("/notify", requestRoute);
 app.use("/blog", blogRouter);
 app.use("/workout", workoutRouter);
+app.use("/payment", paymentRouter);
 
 http.listen(PORT, () => {
   console.log("Server with Socket.IO running at PORT:", PORT);
