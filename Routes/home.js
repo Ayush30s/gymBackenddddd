@@ -26,15 +26,53 @@ const getCurrentDateString = () => {
 };
 
 function getDaysInMonth(year, month) {
-  // Month is 0-based: January is 0, February is 1, etc.
   const date = new Date(year, month + 1, 0);
   return date.getDate();
 }
 
+homeRoute.get("/gym/requested", async (req, res) => {
+  try {
+    console.log(req.user);
+    if (req.user.userType === "gymModel") {
+      return res
+        .status(200)
+        .json({ meg: "GYM OWNER DO NOT HAVE ACCESS TO REQUEST GYM" });
+    }
+
+    const userId = req.user._id;
+    const data = await RequestModel.find({
+      reqby: userId,
+      status: "pending",
+      requestType: "join",
+    });
+
+    const requestGymData = await Promise.all(
+      data.map(async (request) => {
+        return await gymModel.findOne(
+          { _id: request.reqto },
+          "fullName email contactNumber gymName street city state rating profileImage monthlyCharge createdAt joinedBy"
+        );
+      })
+    );
+
+    res.status(200).json(requestGymData.filter(Boolean)); // Remove nulls if gym not found
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong", error });
+  }
+});
+
 homeRoute.get("/", async (req, res) => {
   const { city, state, rating, maxPrice } = req.query;
-
   const userId = req?.user?._id;
+  const userType = req.user.userType;
+
+  if (userType === "gymModel") {
+    return res.status(200).json({
+      message: "WELCOME TO ONLY GYM APP YOU CAN NAVIGATE TO YOU DASHBOARD",
+    });
+  }
+
   if (!userId) {
     return res.status(401).json({ error: "UNAUTHORIZED ACCESS" });
   }
@@ -62,42 +100,35 @@ homeRoute.get("/", async (req, res) => {
 
     //if you are owner then show all gyms except yours
     let gymNotJoined = [];
-    const currentuser = await gymModel.findById(userId);
 
-    if (currentuser) {
-      return res.status(200).json({
-        message: "WELCOME TO ONLY GYM APP YOU CAN NAVIGATE TO YOU DASHBOARD",
-      });
-    } else {
-      //if you are user show all the gyms you have not joined
-      allGyms?.forEach((gym) => {
-        let hasJoined = false;
-        gym.joinedBy.forEach((gym) => {
-          if (gym?.joinedBy?.length !== 0) {
-            if (gym.user._id.toString() == userId?.toString()) {
-              hasJoined = true;
-            }
+    //if you are user show all the gyms you have not joined
+    allGyms?.forEach((gym) => {
+      let hasJoined = false;
+      gym.joinedBy.forEach((gym) => {
+        if (gym?.joinedBy?.length !== 0) {
+          if (gym.user._id.toString() == userId?.toString()) {
+            hasJoined = true;
           }
-        });
-
-        if (!hasJoined) {
-          gymNotJoined.push({
-            gymId: gym._id,
-            ownerName: gym.fullName,
-            city: gym.city,
-            state: gym.state,
-            street: gym.street,
-            email: gym.email,
-            gender: gym.gender,
-            gymName: gym.gymName,
-            rating: gym.rating,
-            contactNumber: gym.contactNumber,
-            profileImage: gym.profileImage,
-            monthlyCharge: gym.monthlyCharge,
-          });
         }
       });
-    }
+
+      if (!hasJoined) {
+        gymNotJoined.push({
+          gymId: gym._id,
+          ownerName: gym.fullName,
+          city: gym.city,
+          state: gym.state,
+          street: gym.street,
+          email: gym.email,
+          gender: gym.gender,
+          gymName: gym.gymName,
+          rating: gym.rating,
+          contactNumber: gym.contactNumber,
+          profileImage: gym.profileImage,
+          monthlyCharge: gym.monthlyCharge,
+        });
+      }
+    });
 
     return res.status(200).json({
       message: "FETCH_ALL_GYM_DATA_SUCCESSFUL",
@@ -411,12 +442,19 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
       reqby: userId,
       reqto: gymId,
       requestType: "join",
-      status: "accepted",
     });
 
+    //make it=> updated joinRequestpeniding when use sent request to join gym
+    console.log(
+      "===========================================",
+      userId,
+      gymId,
+      requestData
+    );
+
     if (requestData) {
-      isJoinRequestAccepted = requestData?.status;
-      isJoinRequestPending = !isJoinRequestAccepted
+      isJoinRequestAccepted = requestData?.status == "accepted";
+      isJoinRequestPending = requestData?.status == "pending";
       isPaymentDone = requestData?.paymentStatus === "paid";
     }
 
