@@ -241,7 +241,8 @@ ownerRoute.post("/signin", async (req, res) => {
       .cookie("token", token, {
         httpOnly: true,
         sameSite: "None",
-        secure: true, // required for SameSite=None; backend must be HTTPS
+        secure: true,
+        partitioned: true,
         maxAge: 24 * 60 * 60 * 1000,
       })
       .json({
