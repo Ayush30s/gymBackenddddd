@@ -249,50 +249,75 @@ blogRouter.post("/comment/:blogId", async (req, res) => {
       return res.status(400).json({ msg: "BLOG_ID_OR_COMMENT_MISSING" });
     }
 
-    // Add comment to Blog
-    await blogModel.findByIdAndUpdate(blogId, {
+    // Get the appropriate model based on user type
+    const UserModel = userType === "gymModel" ? gymModel : userModel;
+
+    // Get author data with proper fields
+    const author = await UserModel.findById(userId)
+      .select("fullName profileImage gymName userType")
+      .lean();
+
+    if (!author) {
+      return res.status(404).json({ msg: "AUTHOR_NOT_FOUND" });
+    }
+
+    // Create new comment
+    const newComment = {
+      user: userId,
+      userType: userType,
+      content: commentContent,
+      commentAt: new Date(),
+    };
+
+    // Add comment to blog
+    const updatedBlog = await blogModel.findByIdAndUpdate(
+      blogId,
+      { $push: { comments: newComment } },
+      { new: true }
+    );
+
+    // Get the newly added comment (last in array)
+    const addedComment = updatedBlog.comments[updatedBlog.comments.length - 1];
+
+    // Prepare response data with populated user info
+    const responseComment = {
+      _id: addedComment._id,
+      content: addedComment.content,
+      commentAt: addedComment.commentAt,
+      user: {
+        _id: userId,
+        fullName:
+          userType === "gymModel"
+            ? author.gymName || author.fullName
+            : author.fullName,
+        profileImage: author.profileImage,
+        userType: userType,
+      },
+    };
+
+    // Add comment to user's/gym's commentedBlogs
+    await UserModel.findByIdAndUpdate(userId, {
       $push: {
-        comments: {
-          user: userId,
-          content: commentContent,
+        commntedBlogs: {
+          comment: commentContent,
           commentAt: new Date(),
+          blog: blogId,
         },
       },
     });
 
-    // Push comment to corresponding user/gym model
-    let updatedUserOrGym;
-    const commentData = {
-      comment: commentContent,
-      commentAt: new Date(),
-      blog: blogId,
-    };
-
-    if (userType === "userModel") {
-      updatedUserOrGym = await userModel.findByIdAndUpdate(
-        userId,
-        { $push: { commntedBlogs: commentData } },
-        { new: true }
-      );
-    } else if (userType === "gymModel") {
-      updatedUserOrGym = await gymModel.findByIdAndUpdate(
-        userId,
-        { $push: { commntedBlogs: commentData } },
-        { new: true }
-      );
-    } else {
-      return res.status(400).json({ msg: "INVALID_USER_TYPE" });
-    }
-
     return res.status(200).json({
       msg: "COMMENT_ADD_SUCCESSFUL",
-      data: updatedUserOrGym,
+      data: {
+        comment: responseComment,
+      },
     });
   } catch (err) {
     console.error("COMMENT_ADD_FAILED", err);
-    return res
-      .status(500)
-      .json({ msg: "COMMENT_ADD_FAILED", error: err.message });
+    return res.status(500).json({
+      msg: "COMMENT_ADD_FAILED",
+      error: err.message,
+    });
   }
 });
 

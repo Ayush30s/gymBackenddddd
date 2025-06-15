@@ -20,9 +20,18 @@ const blogSchema = new Schema(
     ],
     comments: [
       {
-        user: { type: Schema.Types.ObjectId, ref: "userModel" }, // Commenter ID
-        content: { type: String, required: true }, // Comment text
-        commentAt: { type: Date, default: Date.now }, // Timestamp
+        user: {
+          type: Schema.Types.ObjectId,
+          required: true,
+          refPath: "comments.userType",
+        },
+        userType: {
+          type: String,
+          required: true,
+          enum: ["userModel", "gymModel"],
+        },
+        content: { type: String, required: true },
+        commentAt: { type: Date, default: Date.now },
       },
     ],
   },
