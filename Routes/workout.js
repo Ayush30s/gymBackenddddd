@@ -187,7 +187,9 @@ workoutRouter.post("/ai-assistance", async (req, res) => {
       });
     }
 
-    return res.status(200).json({ exercises });
+    return res
+      .status(200)
+      .json({ exercises, message: "Token balance exhausted" });
   } catch (err) {
     console.error("AI error:", err);
     return res.status(500).json({ error: "Something went wrong with AI" });
