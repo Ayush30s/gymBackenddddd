@@ -318,6 +318,27 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
       return res.status(404).json({ message: "GYM_NOT_FOUND" });
     }
 
+    let loggedInUserJoinedDate = -1;
+    gymData.joinedBy.forEach((user) => {
+      if (user.user._id == userId) {
+        console.log(user);
+        loggedInUserJoinedDate = new Date(user.joinedAt);
+      }
+    });
+
+    console.log(loggedInUserJoinedDate, "loggedInUserJoinedDate");
+
+    // Get the year and month from the joined date
+    const year = loggedInUserJoinedDate.getFullYear();
+    const month = loggedInUserJoinedDate.getMonth(); // Note: 0-indexed (0 = January)
+
+    // Last day of the same month
+    const lastDayOfMonth = new Date(year, month + 1, 0); // 0 = last day of previous month
+    const timeDiff = lastDayOfMonth - loggedInUserJoinedDate;
+
+    // Convert milliseconds to days
+    const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
     let followersCount = 0;
     let followingCount = 0;
     let followingGymOrNot = "Follow";
@@ -477,6 +498,7 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
       isPaymentDone: isPaymentDone,
       isJoinRequestAccepted: isJoinRequestAccepted,
       isJoinRequestPending: isJoinRequestPending,
+      daysLeft: daysLeft,
     });
   } catch (error) {
     console.log(error);
