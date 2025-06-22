@@ -326,19 +326,6 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
       }
     });
 
-    console.log(loggedInUserJoinedDate, "loggedInUserJoinedDate");
-
-    // Get the year and month from the joined date
-    const year = loggedInUserJoinedDate.getFullYear();
-    const month = loggedInUserJoinedDate.getMonth(); // Note: 0-indexed (0 = January)
-
-    // Last day of the same month
-    const lastDayOfMonth = new Date(year, month + 1, 0); // 0 = last day of previous month
-    const timeDiff = lastDayOfMonth - loggedInUserJoinedDate;
-
-    // Convert milliseconds to days
-    const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-
     let followersCount = 0;
     let followingCount = 0;
     let followingGymOrNot = "Follow";
@@ -403,19 +390,21 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
       }
     });
 
-    let daysLeftToMonth = -1;
+    let daysLeft = null;
     let attendenceStatus = false;
     if (isUserJoined && joinedDate) {
-      const currentDate = new Date();
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
+      if (loggedInUserJoinedDate !== -1) {
+        // Get the year and month from the joined date
+        const year = loggedInUserJoinedDate?.getFullYear();
+        const month = loggedInUserJoinedDate?.getMonth(); // Note: 0-indexed (0 = January)
 
-      const daysInCurrentMonth = new Date(year, month + 1, 0).getDate();
-      const joinedDay = new Date(joinedDate).getDate();
-      const daysInNextMonth = new Date(year, month + 2, 0).getDate();
+        // Last day of the same month
+        const lastDayOfMonth = new Date(year, month + 1, 0); // 0 = last day of previous month
+        const timeDiff = lastDayOfMonth - loggedInUserJoinedDate;
 
-      daysLeftToMonth =
-        daysInCurrentMonth - joinedDay + Math.min(joinedDay, daysInNextMonth);
+        // Convert milliseconds to days
+        daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+      }
 
       const today = getCurrentDateString();
       attendenceData = await attendenceModel.findOne({
@@ -487,7 +476,6 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
       userJoinedAt: userJoinedAt,
       isUserJoined: isUserJoined,
       shiftJoinedIndex: shiftJoinedIndex,
-      daysLeftToMonth: daysLeftToMonth,
       ratingdone: ratingdone,
       followingGymOrNot: followingGymOrNot,
       followersCount: followersCount,
