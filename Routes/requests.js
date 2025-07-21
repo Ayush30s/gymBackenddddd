@@ -74,7 +74,7 @@ RequestRouter.post("/handleRequest", async (req, res) => {
       });
     }
 
-    // delete older accepted or rejected requests for same pair of users
+    // delete older accepted or rejected requests for same pair of users and requestType in the incoming request
     await RequestModel.deleteMany({
       reqby,
       reqto,
@@ -82,7 +82,7 @@ RequestRouter.post("/handleRequest", async (req, res) => {
       status: { $in: ["accepted", "rejected"] },
     });
 
-    // check if a pending rquest already exists between the pair of users
+    // check if a pending rquest already exists between the pair of users and userType in the incoming request
     const existingRequest = await RequestModel.findOne({
       reqby,
       reqto,
@@ -90,45 +90,55 @@ RequestRouter.post("/handleRequest", async (req, res) => {
       status,
     });
 
-    // if exists, change the status to accepted
-    if (existingRequest) {
-      await RequestModel.findOneAndUpdate(
-        { _id: existingRequest._id },
-        {
-          status: "accepted",
-        }
-      );
-
-      return sendResponse(res, 200, {
-        success: true,
-        debug: "USER STATUS CHANGED FROM PENDING TO ACCEPTED",
-        message: "your request is accepted",
-      });
-    } else {
-      // else, create a new request
-      const newRequest = await RequestModel.create({
-        reqby,
-        reqto,
-        requestType,
-        reqbyType,
-        reqtoType,
-        status: status,
-      });
-
-      const reqData = await RequestModel.findOne({
-        _id: newRequest._id,
-      }).populate({
-        path: "reqby",
-        select: "fullName",
-      });
-
-      return sendResponse(res, 200, {
-        success: true,
-        debug: "USER REQUESTED TO JOIN",
-        message: "your request sent successfully",
-        data: reqData,
+    // if the logged in user again makes request for same request Type , ignore it
+    if (existingRequest && existingRequest.reqby == req.user._id) {
+      return sendResponse(res, 409, {
+        success: false,
+        debug: "REQUEST ALREADY SENT",
+        message: "your request is already sent",
+        error,
       });
     }
+
+    // if exists, change the status to accepted
+    // if (existingRequest) {
+    //   await RequestModel.findOneAndUpdate(
+    //     { _id: existingRequest._id },
+    //     {
+    //       status: "accepted",
+    //     }
+    //   );
+
+    //   return sendResponse(res, 200, {
+    //     success: true,
+    //     debug: "USER STATUS CHANGED FROM PENDING TO ACCEPTED",
+    //     message: "your request is accepted",
+    //   });
+    // } else {
+    // else, create a new request
+    const newRequest = await RequestModel.create({
+      reqby,
+      reqto,
+      requestType,
+      reqbyType,
+      reqtoType,
+      status: status,
+    });
+
+    const reqData = await RequestModel.findOne({
+      _id: newRequest._id,
+    }).populate({
+      path: "reqby",
+      select: "fullName",
+    });
+
+    return sendResponse(res, 200, {
+      success: true,
+      debug: "USER REQUESTED TO JOIN",
+      message: "your request sent successfully",
+      data: reqData,
+    });
+    // }
   } catch (error) {
     console.error("Error in /joingym:", error);
     return sendResponse(res, 500, {
@@ -156,13 +166,13 @@ RequestRouter.put("/updatejoinstatus", async (req, res) => {
       return res.status(404).json({ error: "Request not found" });
     }
 
-    // Step 2: Find and delete older requests for same reqby, reqto, requestType
-    await RequestModel.deleteMany({
-      reqby: currentRequest.reqby,
-      reqto: currentRequest.reqto,
-      requestType: requestType,
-      status: { $in: ["accepted", "rejected"] },
-    });
+    // // Step 2: Find and delete older requests for same reqby, reqto, requestType
+    // await RequestModel.deleteMany({
+    //   reqby: currentRequest.reqby,
+    //   reqto: currentRequest.reqto,
+    //   requestType: requestType,
+    //   status: { $in: ["accepted", "rejected"] },
+    // });
 
     // Step 3: Update the status of the current request
     currentRequest.status = status;
@@ -181,6 +191,7 @@ RequestRouter.put("/updatejoinstatus", async (req, res) => {
 RequestRouter.delete("/deleteNotification", async (req, res) => {
   const loggedInUser = req.user._id;
   const notification = req.body;
+  console.log("notification", notification);
 
   try {
     if (loggedInUser == notification.reqby) {
@@ -189,6 +200,7 @@ RequestRouter.delete("/deleteNotification", async (req, res) => {
           status: { $in: ["accepted", "rejected"] },
           reqby: notification.reqby,
           reqto: notification.reqto,
+          requestType: notification.requestType,
         },
         {
           reqbyRemove: true,
@@ -200,6 +212,7 @@ RequestRouter.delete("/deleteNotification", async (req, res) => {
           status: { $in: ["accepted", "rejected"] },
           reqby: notification.reqby,
           reqto: notification.reqto,
+          requestType: notification.requestType,
         },
         {
           reqtoRemove: true,

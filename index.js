@@ -24,7 +24,7 @@ const { Server } = require("socket.io");
 
 const io = new Server(http, {
   cors: {
-    origin: "https://gym-frontendnew-lnl5.vercel.app",
+    origin: "http://localhost:5173",
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -73,9 +73,10 @@ io.on("connection", (socket) => {
   });
 });
 
+// http://localhost:5173
 app.use(
   cors({
-    origin: "https://gym-frontendnew-lnl5.vercel.app",
+    origin: "http://localhost:5173",
     credentials: true,
   })
 );
