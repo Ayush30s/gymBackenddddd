@@ -74,6 +74,15 @@ RequestRouter.post("/handleRequest", async (req, res) => {
       });
     }
 
+    // delete older accepted or rejected requests for same pair of users
+    await RequestModel.deleteMany({
+      reqby,
+      reqto,
+      requestType,
+      status: { $in: ["accepted", "rejected"] },
+    });
+
+    // check if a pending rquest already exists between the pair of users
     const existingRequest = await RequestModel.findOne({
       reqby,
       reqto,
@@ -81,6 +90,7 @@ RequestRouter.post("/handleRequest", async (req, res) => {
       status,
     });
 
+    // if exists, change the status to accepted
     if (existingRequest) {
       await RequestModel.findOneAndUpdate(
         { _id: existingRequest._id },
@@ -95,6 +105,7 @@ RequestRouter.post("/handleRequest", async (req, res) => {
         message: "your request is accepted",
       });
     } else {
+      // else, create a new request
       const newRequest = await RequestModel.create({
         reqby,
         reqto,
@@ -131,7 +142,7 @@ RequestRouter.post("/handleRequest", async (req, res) => {
 
 RequestRouter.put("/updatejoinstatus", async (req, res) => {
   try {
-    const { requestId, status } = req.body;
+    const { requestId, status, requestType } = req.body;
 
     if (!requestId || !status) {
       return res
@@ -149,9 +160,8 @@ RequestRouter.put("/updatejoinstatus", async (req, res) => {
     await RequestModel.deleteMany({
       reqby: currentRequest.reqby,
       reqto: currentRequest.reqto,
-      requestType: currentRequest.requestType,
+      requestType: requestType,
       status: { $in: ["accepted", "rejected"] },
-      createdAt: { $lt: currentRequest.createdAt },
     });
 
     // Step 3: Update the status of the current request
@@ -171,7 +181,6 @@ RequestRouter.put("/updatejoinstatus", async (req, res) => {
 RequestRouter.delete("/deleteNotification", async (req, res) => {
   const loggedInUser = req.user._id;
   const notification = req.body;
-  console.log("notification", notification);
 
   try {
     if (loggedInUser == notification.reqby) {

@@ -41,7 +41,6 @@ followRoute.post(`/unfollow/user/:user_Id`, async (req, res) => {
 
     // Remove the user from the following list
     let removeIdIndex = followDoc.following.indexOf(removeId);
-    console.log(removeIdIndex, "removeIdIndex");
     if (removeIdIndex !== -1) {
       followDoc.following.splice(removeIdIndex, 1);
       followDoc.followingType.splice(removeIdIndex, 1);
@@ -81,7 +80,6 @@ followRoute.post("/follow/user/:user_Id", async (req, res) => {
     const { user_Id: followId } = req.params;
     const loggedInuser = req.user._id;
     const userType = req.user.userType;
-    console.log(req.user, "userType");
 
     let followuserType = "userModel";
     const gymData = await gymModel.findById(followId);
@@ -90,7 +88,6 @@ followRoute.post("/follow/user/:user_Id", async (req, res) => {
     }
 
     let secondPersonFollowDoc = await followModel.findById(followId);
-
     if (!secondPersonFollowDoc) {
       // Create a new follow document if not found
       secondPersonFollowDoc = new followModel({
@@ -105,6 +102,7 @@ followRoute.post("/follow/user/:user_Id", async (req, res) => {
         secondPersonFollowDoc.followerType.push(userType);
       }
     }
+
     await secondPersonFollowDoc.save();
 
     let loginUserFollowDoc = await followModel.findById(loggedInuser);
@@ -134,7 +132,6 @@ followRoute.post("/follow/user/:user_Id", async (req, res) => {
 
 followRoute.get("/user/followingList/:user_id", async (req, res) => {
   try {
-    console.log("followinglist");
     const { user_id } = req.params;
     const loggedInuser = req.user._id;
 
@@ -157,21 +154,12 @@ followRoute.get("/user/followingList/:user_id", async (req, res) => {
         .select("followers")
         .lean();
 
-      console.log(
-        loggedInUserFollowDoc,
-        "loggedInUserFollowDocloggedInUserFollowDoc",
-        loggedInuser
-      );
-
       let loggedInUserFollowYou = false;
       loggedInUserFollowDoc?.followers?.forEach((user) => {
-        console.log(user._id == user_id, user._id, user_id);
         if (user._id == user_id) {
           loggedInUserFollowYou = true;
         }
       });
-
-      console.log(loggedInUserFollowYou);
 
       if (!loggedInUserFollowYou) {
         return res.status(200).json({
@@ -186,7 +174,9 @@ followRoute.get("/user/followingList/:user_id", async (req, res) => {
         const userType = followDoc.followingType[index]; // Get corresponding user type
         const model = userType === "userModel" ? userModel : gymModel;
 
-        return model.findById(followedUserId, "fullName profileImage userType").lean();
+        return model
+          .findById(followedUserId, "fullName profileImage userType")
+          .lean();
       })
     );
 
@@ -247,11 +237,11 @@ followRoute.get("/user/followersList/:user_id", async (req, res) => {
         const followerType = userFollowDoc.followerType[index]; // Get corresponding type
         const model = followerType === "userModel" ? userModel : gymModel;
 
-        return model.findById(followerId, "fullName profileImage userType").lean();
+        return model
+          .findById(followerId, "fullName profileImage userType")
+          .lean();
       })
     );
-
-    console.log("userFollowersData", userFollowersData);
 
     return res.status(200).json({
       userFollowersData: userFollowersData.filter((user) => user),

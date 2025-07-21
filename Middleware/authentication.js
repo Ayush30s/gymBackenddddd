@@ -2,9 +2,7 @@ const { verifyToken } = require("../services/auth");
 
 function authenticateUser(cookieName) {
   return (req, res, next) => {
-    console.log("All cookies in request:", req.cookies);
     const tokenCookieValue = req.cookies[cookieName];
-    console.log("authenticateUser -> ", tokenCookieValue);
 
     if (!tokenCookieValue) {
       return next(); // No cookie, proceed without user
@@ -13,7 +11,6 @@ function authenticateUser(cookieName) {
     try {
       const userPayload = verifyToken(tokenCookieValue);
       req.user = userPayload;
-      console.log("User Authenticated:", userPayload);
     } catch (error) {
       console.error("Token verification failed:", error.message);
     }

@@ -214,7 +214,6 @@ staticRoute.get(
 staticRoute.get(
   "/blogs",
   (req, res, next) => {
-    console.log(req.user);
     if (req.user.userType == "OWNER") {
       return res.send("To use Blog service use a user type userId");
     } else {

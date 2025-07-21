@@ -33,41 +33,43 @@ const io = new Server(http, {
   pingInterval: 25000,
 });
 
-const gymIdToOwnerSocketId = {};
+const gymIdToSocketId = {};
 const userIdToSocketId = {};
 
 io.on("connection", (socket) => {
-  console.log("New socket connected:", socket.id);
-
   socket.on("register", ({ reqby, reqbyType }) => {
-    if (reqbyType == "gymModel") gymIdToOwnerSocketId[reqby] = socket.id;
+    if (reqbyType == "gymModel") gymIdToSocketId[reqby] = socket.id;
     else userIdToSocketId[reqby] = socket.id;
-    console.log(`user registered: reqby=${reqby}, socketId=${socket.id}`);
   });
 
-  socket.on("request received", async (data) => {
+  socket.on("request", async (data) => {
     const { reqto, reqby, requestType, reqtoType, reqbyType, status } = data;
-    console.log(data);
-    const reqtoSocketId = gymIdToOwnerSocketId[reqto];
+    let reqtoSocketId = gymIdToSocketId[reqto];
+    if (reqtoSocketId == null) {
+      reqtoSocketId = userIdToSocketId[reqto];
+    }
+
     if (reqtoSocketId) {
       io.to(reqtoSocketId).emit(requestType, data);
-      console.log(`Join request sent to reqto ${reqto}`);
     } else {
-      console.log(`No owner socket registered for reqto: ${reqto}`);
+      console.log(`No socket registered for reqto: ${reqto}`);
     }
   });
 
   socket.on("request accepted", (data) => {
-    console.log("requser acctepted");
-    const userSocketId = userIdToSocketId[data.to._id];
-    console.log("request accepted11", userSocketId);
-    socket.to(userSocketId).emit("ownerAccepted", data);
+    let userSocketId = userIdToSocketId[data.to._id];
+    if (userSocketId == null) {
+      userSocketId = gymIdToSocketId[data.to._id];
+    }
+    socket.to(userSocketId).emit("accepted", data);
   });
 
   socket.on("request rejected", (data) => {
-    const userSocketId = userIdToSocketId[data.to._id];
-    console.log("request accepted", userSocketId);
-    socket.to(userSocketId).emit("ownerRejected", data);
+    let userSocketId = userIdToSocketId[data.to._id];
+    if (userSocketId == null) {
+      userSocketId = gymIdToSocketId[data.to._id];
+    }
+    socket.to(userSocketId).emit("rejected", data);
   });
 });
 

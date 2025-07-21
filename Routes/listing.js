@@ -179,7 +179,6 @@ listingRouter.post("/new", async (req, res) => {
       images.map((image) => uploadToCloudinary(image))
     );
 
-    console.log("Uploaded images:", cloudinaryImages);
     const newListing = await equipmentListing.create({
       owner,
       ownerModel,
@@ -226,8 +225,6 @@ listingRouter.post("/new", async (req, res) => {
         street,
       },
     });
-
-    console.log("newListing-----", newListing);
 
     return sendResponse(res, 201, {
       success: true,
@@ -481,7 +478,6 @@ listingRouter.post("/like/:listingId", async (req, res) => {
   try {
     const { listingId } = req.params;
     const userId = req.user?._id;
-    console.log(req.user);
 
     if (!userId) {
       return sendResponse(res, 401, {
@@ -531,9 +527,7 @@ listingRouter.post("/like/:listingId", async (req, res) => {
 
 listingRouter.post("/report/:listingId", async (req, res) => {
   try {
-    console.log(req.body, "00000000");
     const { message, reason } = req.body;
-    // console.log(message, reason, "00000000-");
     const { listingId } = req.params;
     const userId = req.user?._id;
 

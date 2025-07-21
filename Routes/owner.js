@@ -38,14 +38,10 @@ const uploadToCloudinary = (fileBuffer) => {
 
 ownerRoute.get("/verify-token", (req, res) => {
   const token = req.cookies.token;
-  console.log(token);
-
   if (!token) return res.status(401).json({ message: "Unauthorized" });
 
   try {
-    console.log(process.env.JWT_SECRET, "process.env.JWT_SECRET");
     const decoded = JWT.verify(token, process.env.JWT_SECRET);
-    console.log(decoded, "dcdlksf");
     return res.status(200).json({ user: decoded });
   } catch (err) {
     return res.status(401).json({ message: "Invalid token" });
@@ -55,7 +51,6 @@ ownerRoute.get("/verify-token", (req, res) => {
 // Register as a gym owner
 ownerRoute.post("/owner", async (req, res) => {
   try {
-    console.log(req.body, "body");
     // Extract fields from req.body and convert them to lowercase
     const fullName = req.body.fullName;
     const email = req.body.email;
@@ -145,8 +140,6 @@ ownerRoute.post("/user", async (req, res) => {
     const city = req.body?.city;
     const street = req.body?.street;
 
-    console.log(req.body);
-
     // Ensure all fields are filled
     if (
       !fullName ||
@@ -165,7 +158,6 @@ ownerRoute.post("/user", async (req, res) => {
     const checkEmailInGymModel = await gymModel.findOne({ email: email });
     const checkEmailInUserModel = await userModel.findOne({ email: email });
     if (checkEmailInGymModel || checkEmailInUserModel) {
-      console.log("Email is already registered:", email);
       return res
         .status(409)
         .json({ message: "This Email is already registered." });
@@ -183,9 +175,6 @@ ownerRoute.post("/user", async (req, res) => {
       }
     }
 
-    // Debugging: Log the email to see what is being checked
-    console.log("Checking if the email exists in gymModel:", email);
-
     // Create a new user entry in the user model
     const newUser = await userModel.create({
       fullName,
@@ -199,8 +188,6 @@ ownerRoute.post("/user", async (req, res) => {
       street,
     });
 
-    console.log("new user created", newUser);
-
     // Redirect to sign-in form upon successful registration
     return res.status(201).json({ message: "User Registered successfully" });
   } catch (error) {
@@ -212,7 +199,6 @@ ownerRoute.post("/user", async (req, res) => {
 
 ownerRoute.post("/signin", async (req, res) => {
   const { email, password } = req.body;
-  console.log(req.body);
   try {
     let user = await gymModel.findOne({ email });
 
@@ -236,7 +222,6 @@ ownerRoute.post("/signin", async (req, res) => {
     }
 
     const token = createToken(user);
-    console.log(token, "----------------------------->");
     res
       .cookie("token", token, {
         httpOnly: true,
@@ -260,9 +245,7 @@ ownerRoute.post("/signin", async (req, res) => {
 });
 
 ownerRoute.post("/generate-qr-token", (req, res) => {
-  console.log(req.body, "body");
   const { gymId, sessionId, date } = req.body;
-  console.log(gymId, sessionId, date, "qr code");
 
   if (!gymId || !sessionId || !date) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -272,7 +255,6 @@ ownerRoute.post("/generate-qr-token", (req, res) => {
     expiresIn: "5m",
   });
 
-  console.log(token);
   res.json({ token });
 });
 
@@ -323,7 +305,6 @@ ownerRoute.post("/addmoredetails", async (req, res) => {
 });
 
 ownerRoute.get("/userDetails/:email", async (req, res) => {
-  console.log("req.user", req.user);
   const { email } = req.params;
 
   let data = "";
@@ -348,7 +329,7 @@ ownerRoute.get("/userDetails/:email", async (req, res) => {
   if (data === "") {
     return res.status(404).json({ message: "User not found" });
   }
-  console.log("user details : ", data);
+
   return res.status(200).json({ data: data });
 });
 

@@ -32,7 +32,6 @@ function getDaysInMonth(year, month) {
 
 homeRoute.get("/gym/requested", async (req, res) => {
   try {
-    console.log(req.user);
     if (req.user.userType === "gymModel") {
       return res
         .status(200)
@@ -219,14 +218,11 @@ homeRoute.get("/gym/dashboard/", async (req, res) => {
       select: "fullName profileImage userType",
     });
 
-    // console.log("Mygymdata",Mygymdata)
-
     if (!Mygymdata) {
       return res.status(404).json({ message: "GYM_NOT_FOUND" });
     }
 
     if (Mygymdata.userType !== "gymModel") {
-      console.log("Mygymdata", Mygymdata);
       return res.status(401).json({
         message: "YOU OWN A OWNERTYPE ACCOUNT CANT ACCESS A USER DASHBOARD",
       });
@@ -321,7 +317,6 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
     let loggedInUserJoinedDate = -1;
     gymData.joinedBy.forEach((user) => {
       if (user.user._id == userId) {
-        console.log(user);
         loggedInUserJoinedDate = new Date(user.joinedAt);
       }
     });
@@ -446,26 +441,31 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
     let isJoinRequestAccepted = false;
     let isPaymentDone = false;
     let isJoinRequestPending = false;
+    let isFollowRequestAccepted = false;
+    let isFollowRequestPending = false;
 
     //check if payment is made for this gym
-    const requestData = await RequestModel.findOne({
+    const joinrequestData = await RequestModel.findOne({
       reqby: userId,
       reqto: gymId,
       requestType: "join",
     });
 
-    //make it=> updated joinRequestpeniding when use sent request to join gym
-    console.log(
-      "===========================================",
-      userId,
-      gymId,
-      requestData
-    );
+    const followrequestData = await RequestModel.findOne({
+      reqby: userId,
+      reqto: gymId,
+      requestType: "follow",
+    });
 
-    if (requestData) {
-      isJoinRequestAccepted = requestData?.status == "accepted";
-      isJoinRequestPending = requestData?.status == "pending";
-      isPaymentDone = requestData?.paymentStatus === "paid";
+    if (joinrequestData) {
+      isJoinRequestAccepted = joinrequestData?.status == "accepted";
+      isJoinRequestPending = joinrequestData?.status == "pending";
+      isPaymentDone = joinrequestData?.paymentStatus === "paid";
+    }
+
+    if (followrequestData) {
+      isFollowRequestAccepted = followrequestData?.status == "accepted";
+      isFollowRequestPending = followrequestData?.status == "pending";
     }
 
     return res.status(200).json({
@@ -486,6 +486,8 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
       isPaymentDone: isPaymentDone,
       isJoinRequestAccepted: isJoinRequestAccepted,
       isJoinRequestPending: isJoinRequestPending,
+      isFollowRequestAccepted: isFollowRequestAccepted,
+      isFollowRequestPending: isFollowRequestPending,
       daysLeft: daysLeft,
     });
   } catch (error) {
@@ -527,7 +529,6 @@ homeRoute.post("/:gymId/joingym", async (req, res) => {
       }
     });
 
-    console.log("isUserJoined", isUserJoined);
 
     // If the user has not joined the gym
     if (!isUserJoined) {
@@ -562,7 +563,6 @@ homeRoute.post("/:gymId/leavegym", async (req, res) => {
       requestType: "join",
     });
 
-    console.log("data", data);
     // Remove gym from the user's joinedGym array
     await userModel.findByIdAndUpdate(userId, {
       $pull: { joinedGym: gymId },
@@ -623,7 +623,6 @@ homeRoute.post("/gym/mark-attendance", async (req, res) => {
   try {
     const decoded = JWT.verify(token, QR_SECRET);
     const { gymId, date, sessionId } = decoded;
-    console.log("decode", gymId, date, sessionId, decoded);
 
     if (currentDate != date) {
       return res.status(400).json({ message: "SOMETHING WENT WRONG" });
@@ -779,7 +778,6 @@ homeRoute.get("/attendence-report", async (req, res) => {
       attendanceArray: attendanceArray,
     });
   } catch (error) {
-    console.log(error);
     return res.status(500).json({ error: error.message });
   }
 });
@@ -987,7 +985,6 @@ homeRoute.post("/update-dashboard-personalDetails", async (req, res) => {
     }
 
     const { userType } = data;
-    console.log("userType:", userType);
 
     let resdata = {};
     const { profileImage } = req.body;
@@ -1010,14 +1007,6 @@ homeRoute.post("/update-dashboard-personalDetails", async (req, res) => {
     if (userType === "gymModel") {
       const { fullName, contactNumber, description, monthlyCharge } = req.body;
 
-      console.log("Updating gymModel with:", {
-        fullName,
-        contactNumber,
-        monthlyCharge,
-        description,
-        cloudImageURL,
-      });
-
       resdata = await gymModel.findOneAndUpdate(
         { _id: userId },
         {
@@ -1032,13 +1021,6 @@ homeRoute.post("/update-dashboard-personalDetails", async (req, res) => {
     } else {
       const { fullName, contactNumber, bio } = req.body;
 
-      console.log("Updating userModel with:", {
-        fullName,
-        contactNumber,
-        bio,
-        cloudImageURL,
-      });
-
       resdata = await userModel.findOneAndUpdate(
         { _id: userId },
         {
@@ -1051,7 +1033,6 @@ homeRoute.post("/update-dashboard-personalDetails", async (req, res) => {
       );
     }
 
-    console.log("Update result:", resdata);
 
     return res
       .status(200)
