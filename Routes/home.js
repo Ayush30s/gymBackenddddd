@@ -1249,20 +1249,6 @@ homeRoute.get("/user/:userId", async (req, res) => {
     muscles.push(key);
   });
 
-  let isFollowRequestAccepted = false;
-  let isFollowRequestPending = false;
-
-  const followRequestData = await RequestModel.findOne({
-    reqby: req.user._id,
-    reqto: id,
-    requestType: "follow",
-  });
-
-  if (followRequestData) {
-    isFollowRequestAccepted = followRequestData?.status == "accepted";
-    isFollowRequestPending = followRequestData?.status == "pending";
-  }
-
   return res.status(200).json({
     data: userData,
     userType: userType,
@@ -1278,8 +1264,6 @@ homeRoute.get("/user/:userId", async (req, res) => {
     exerciseCount: exerciseCount,
     totalexerciseDone: totalexerciseDone,
     tottalMuscleTrained: tottalMuscleTrained,
-    isFollowRequestAccepted: isFollowRequestAccepted,
-    isFollowRequestPending: isFollowRequestPending,
   });
 });
 
