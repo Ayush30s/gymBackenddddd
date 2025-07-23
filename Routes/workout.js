@@ -200,38 +200,37 @@ workoutRouter.post("/exercise/:exerciseName?", async (req, res) => {
   try {
     let { time, focusPart, caloriesBurned, difficulty, sets, reps } = req.body;
 
-    const userId = req.user._id;
-
-    // Default exercise name
-    let exerciseName = req.params.exerciseName || "Not mentioned";
-
-    // Convert numeric fields
-    time = Number(time);
-    sets = Number(sets);
-    caloriesBurned = Number(caloriesBurned);
-
-    // Handle reps as either a single number or a range like '12-15'
-    let repsObj = { min: 0, max: 0 };
-    if (typeof reps === "string" && reps.includes("-")) {
-      const [min, max] = reps.split("-").map((r) => Number(r.trim()));
-      repsObj = { min, max };
-    } else {
-      repsObj = { min: Number(reps), max: Number(reps) };
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ error: "Unauthorized - User not found" });
     }
 
+    const userId = req.user._id;
+
+    time = Number(time);
+    let exerciseName = req.params.exerciseName || "Not mentioned";
+
+    // Convert fields to proper types
+    sets = Number(sets);
+    if (isNaN(sets)) {
+      return res.status(400).json({ error: "Sets must be a number" });
+    }
+
+    // Build exercise data
     const exerciseData = {
       time,
       focusPart,
       exerciseName,
-      caloriesBurned,
+      caloriesBurned: String(caloriesBurned), // Ensure it's a string
       difficulty,
       sets,
-      reps: repsObj,
+      reps: String(reps), // Schema expects a string
     };
 
+    // Push new workout to user document
     await PhyModel.findOneAndUpdate(
       { user: userId },
-      { $push: { workout: exerciseData } }
+      { $push: { workout: exerciseData } },
+      { new: true, upsert: true } // upsert ensures doc is created if not exists
     );
 
     return res.status(200).json({ message: "EXERCISE SUBMITTED SUCCESSFULLY" });
