@@ -6,7 +6,6 @@ const gymModel = require("../Models/gym");
 const userModel = require("../Models/user");
 const ShiftModel = require("../Models/shift");
 const followModel = require("../Models/follow");
-const gymnameModel = require("../Models/gymName");
 const RequestModel = require("../Models/request");
 const uploadToCloudinary = require("../utils/cloudinaryUpload");
 const PhyModel = require("../Models/userphy");
@@ -233,9 +232,8 @@ homeRoute.get("/gym/dashboard/", async (req, res) => {
     let followersCount = 0;
     let followingCount = 0;
 
-    //isko sahi krna hai
     const followData = await followModel
-      .findById(req.user._id)
+      .findOne({ user: req.user._id })
       .populate("followers", "fullName profileImage userType")
       .populate("following", "fullName profileImage userType");
 
@@ -325,7 +323,7 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
     let followingCount = 0;
     let followingGymOrNot = "Follow";
     const followData = await followModel
-      .findById(gymId)
+      .findOne({ user: gymId })
       .populate("followers", "fullName userType")
       .populate("following", "fullName userType");
 
@@ -342,7 +340,7 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
             followingGymOrNot = "Following";
           }
         });
-      } else if (followData.followRequests.length > 0) {
+      } else if (followData?.followRequests?.length > 0) {
         followData.followRequests.forEach((user) => {
           if (user._id == req.user?._id) {
             followingGymOrNot = "Requested";
@@ -528,7 +526,6 @@ homeRoute.post("/:gymId/joingym", async (req, res) => {
         isUserJoined = true;
       }
     });
-
 
     // If the user has not joined the gym
     if (!isUserJoined) {
@@ -814,7 +811,7 @@ homeRoute.get("/user/dashboard", async (req, res) => {
 
   //isko sahi krna hai
   const followData = await followModel
-    .findById(id)
+    .findOne({ user: id })
     .populate("followers", "fullName profileImage userType")
     .populate("following", "fullName profileImage userType");
 
@@ -1033,7 +1030,6 @@ homeRoute.post("/update-dashboard-personalDetails", async (req, res) => {
       );
     }
 
-
     return res
       .status(200)
       .json({ message: "USER_PROFILE_UPDATED_SUCCESSFULLY" });
@@ -1099,9 +1095,8 @@ homeRoute.get("/user/:userId", async (req, res) => {
   let followersCount = 0;
   let followingCount = 0;
 
-  //isko sahi krna hai
   const followData = await followModel
-    .findById(id)
+    .findOne({ user: id })
     .populate("followers", "fullName profileImage userType")
     .populate("following", "fullName profileImage userType");
 
