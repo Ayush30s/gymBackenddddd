@@ -6,9 +6,9 @@ const reportSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      refPath: "ownerModel",
+      refPath: "userModel",
     },
-    ownerModel: {
+    userModel: {
       type: String,
       required: true,
       enum: ["userModel", "gymModel"],

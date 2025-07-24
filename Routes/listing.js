@@ -41,8 +41,10 @@ listingRouter.get("/all", async (req, res) => {
     const filter = {};
 
     if (type) filter.type = type;
-    if (city) filter["location.city"] = { $regex: new RegExp(city, "i") };
-    if (state) filter["location.state"] = { $regex: new RegExp(state, "i") };
+    if (city)
+      filter["location.city"] = { $regex: new RegExp(`^${city}$`, "i") };
+    if (state)
+      filter["location.state"] = { $regex: new RegExp(`^${state}$`, "i") };
     if (equipment && equipment !== "write equipment name...")
       filter.equipment = { $regex: new RegExp(equipment, "i") };
 
