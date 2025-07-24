@@ -422,7 +422,7 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
     }
 
     // Determine if the user has joined any shift
-    const allShifts = await ShiftModel.find({ gym: gymId });
+    const allShifts = await ShiftModel.find({ gym: gymId, status: "Active" });
     let shiftJoinedIndex = -1;
     if (isUserJoined && allShifts?.length > 0) {
       allShifts?.forEach((shift, index) => {
