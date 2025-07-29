@@ -314,7 +314,7 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
 
     let loggedInUserJoinedDate = -1;
     gymData.joinedBy.forEach((user) => {
-      if (user.user._id == userId) {
+      if (user?.user?._id == userId) {
         loggedInUserJoinedDate = new Date(user.joinedAt);
       }
     });
@@ -384,19 +384,30 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
     });
 
     let daysLeft = null;
-    let attendenceStatus = false;
+    let attendenceStatus = "Absent";
     if (isUserJoined && joinedDate) {
       if (loggedInUserJoinedDate !== -1) {
-        // Get the year and month from the joined date
-        const year = loggedInUserJoinedDate?.getFullYear();
-        const month = loggedInUserJoinedDate?.getMonth(); // Note: 0-indexed (0 = January)
+        console.log(loggedInUserJoinedDate, "loggedInUserJoinedDate");
 
-        // Last day of the same month
-        const lastDayOfMonth = new Date(year, month + 1, 0); // 0 = last day of previous month
-        const timeDiff = lastDayOfMonth - loggedInUserJoinedDate;
+        // Ensure it's a Date object
+        const joinedDate = new Date(loggedInUserJoinedDate);
+
+        // Calculate the date after 30 days from the joined date
+        const oneMonthLater = new Date(joinedDate);
+        oneMonthLater.setDate(joinedDate.getDate() + 30);
+
+        // Calculate the difference between now and the 30-day mark
+        const today = new Date();
+        const timeDiff = oneMonthLater - today;
 
         // Convert milliseconds to days
         daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+        // If daysLeft is negative, the user has already completed one month
+        console.log(
+          daysLeft > 0 ? daysLeft : 0,
+          "days left to complete 30 days"
+        );
       }
 
       const today = getCurrentDateString();
@@ -406,19 +417,27 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
         date: today,
       });
 
-      if (
-        attendenceData &&
-        attendenceData.checkInTime &&
-        attendenceData.checkOutTime
-      ) {
-        attendenceStatus = -1;
+      if (!attendenceData) {
+        attendenceStatus = "Absent";
+      } else if (attendenceData.checkOutTime == null) {
+        attendenceStatus = "Checkout Pending";
+      } else {
+        attendenceStatus = "Both Marked";
       }
 
-      if (!attendenceData || attendenceData.checkInTime === null) {
-        attendenceStatus = false;
-      } else if (attendenceData.checkOutTime === null) {
-        attendenceStatus = true;
-      }
+      // if (
+      //   attendenceData &&
+      //   attendenceData.checkInTime &&
+      //   attendenceData.checkOutTime
+      // ) {
+      //   attendenceStatus = "Both marked";
+      // }
+
+      // if (!attendenceData || attendenceData.checkInTime === null) {
+      //   attendenceStatus = "Absent";
+      // } else if (attendenceData.checkOutTime === null) {
+      //   attendenceStatus = "CheckedIn";
+      // }
     }
 
     // Determine if the user has joined any shift
@@ -436,11 +455,9 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
       });
     }
 
-    let isJoinRequestAccepted = false;
+    let FollowRequestStatus = -1;
     let isPaymentDone = false;
     let isJoinRequestPending = false;
-    let isFollowRequestAccepted = false;
-    let isFollowRequestPending = false;
 
     //check if payment is made for this gym
     const joinrequestData = await RequestModel.findOne({
@@ -456,15 +473,16 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
     });
 
     if (joinrequestData) {
-      isJoinRequestAccepted = joinrequestData?.status == "accepted";
       isJoinRequestPending = joinrequestData?.status == "pending";
       isPaymentDone = joinrequestData?.paymentStatus === "paid";
     }
 
     if (followrequestData) {
-      isFollowRequestAccepted = followrequestData?.status == "accepted";
-      isFollowRequestPending = followrequestData?.status == "pending";
+      if (followrequestData.status == "accepted") FollowRequestStatus = 1;
+      else if (followrequestData.status == "pending") FollowRequestStatus = 0;
     }
+
+    console.log(daysLeft, "daysLeftdaysLeftdaysLeft");
 
     return res.status(200).json({
       message: "GYM_PAGE_DATA_FETCHED_SUCCESSFUL",
@@ -482,10 +500,8 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
       showFollowButton: showFollowButton,
       attendenceStatus: attendenceStatus,
       isPaymentDone: isPaymentDone,
-      isJoinRequestAccepted: isJoinRequestAccepted,
+      FollowRequestStatus: FollowRequestStatus,
       isJoinRequestPending: isJoinRequestPending,
-      isFollowRequestAccepted: isFollowRequestAccepted,
-      isFollowRequestPending: isFollowRequestPending,
       daysLeft: daysLeft,
     });
   } catch (error) {
@@ -570,11 +586,11 @@ homeRoute.post("/:gymId/leavegym", async (req, res) => {
       $pull: { joinedBy: { user: userId.toString() } },
     });
 
-    // Remove the attendence of the user
-    await attendenceModel.deleteMany({
-      userId: req.user._id,
-      gymId: gymId,
-    });
+    // // Remove the attendence of the user
+    // await attendenceModel.deleteMany({
+    //   userId: req.user._id,
+    //   gymId: gymId,
+    // });
 
     const shiftData = await ShiftModel.find({ gym: gymId });
 
@@ -605,11 +621,15 @@ homeRoute.post("/gym/mark-attendance", async (req, res) => {
   const userId = req.user._id;
   const { token } = req.body;
 
+  console.log("---------------", status);
+
   const now = new Date();
+
   const currentTime = now.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
+
   const currentDate =
     now.getFullYear() +
     "-" +
@@ -641,14 +661,14 @@ homeRoute.post("/gym/mark-attendance", async (req, res) => {
     }
 
     // Fix: Properly compare the string value
-    if (status === "true") {
+    if (status === "Checkout Pending") {
       // Mark attendance out
       const existingAttendance = await attendenceModel.findOne({
         userId,
         gymId,
         date,
         sessionId,
-        checkOutTime: null, // Only update if not already checked out
+        checkOutTime: null,
       });
 
       if (!existingAttendance) {
@@ -668,7 +688,7 @@ homeRoute.post("/gym/mark-attendance", async (req, res) => {
         success: true,
         message: "ATTENDANCE_MARKED_OUT_SUCCESSFULLY",
       });
-    } else {
+    } else if (status === "Absent") {
       // Mark attendance in
       try {
         const data = await attendenceModel.create({
@@ -1100,6 +1120,8 @@ homeRoute.get("/user/:userId", async (req, res) => {
     .populate("followers", "fullName profileImage userType")
     .populate("following", "fullName profileImage userType");
 
+  console.log(followData);
+
   if (!followData) {
     followersCount = 0;
     followingCount = 0;
@@ -1219,34 +1241,32 @@ homeRoute.get("/user/:userId", async (req, res) => {
   );
 
   //fetching keys and value from map
-  const muscles = [];
-  const muscleCount = [];
-  const exercise = [];
-  const exerciseCount = [];
+  const musclesNameArray = [];
+  const muscleCountArray = [];
+  const exerciseNameArray = [];
+  const exerciseCountArray = [];
   let totalexerciseDone = 0;
-  let tottalMuscleTrained = 0;
+  let totalMuscleTrained = 0;
 
   sortedExerciseMap.forEach((value, key) => {
     totalexerciseDone += value;
   });
 
   sortedMuscleMap.forEach((value, key) => {
-    tottalMuscleTrained += value;
+    totalMuscleTrained += value;
   });
 
   sortedExerciseMap.forEach((value, key) => {
-    exerciseCount.push(((value / totalexerciseDone) * 100).toFixed(1));
-    exercise.push(key);
+    exerciseCountArray.push(((value / totalexerciseDone) * 100).toFixed(1));
+    exerciseNameArray.push(key);
   });
 
   sortedMuscleMap.forEach((value, key) => {
-    muscleCount.push(((value / tottalMuscleTrained) * 100).toFixed(1));
-    muscles.push(key);
+    muscleCountArray.push(((value / totalMuscleTrained) * 100).toFixed(1));
+    musclesNameArray.push(key);
   });
 
-  let isFollowRequestAccepted = false;
-  let isFollowRequestPending = false;
-
+  let FollowRequestStatus = -1;
   const followRequestData = await RequestModel.findOne({
     reqby: req.user._id,
     reqto: id,
@@ -1254,12 +1274,13 @@ homeRoute.get("/user/:userId", async (req, res) => {
   });
 
   if (followRequestData) {
-    isFollowRequestAccepted = followRequestData?.status == "accepted";
-    isFollowRequestPending = followRequestData?.status == "pending";
+    if (followRequestData?.status == "accepted") {
+      FollowRequestStatus = 1;
+    } else if (followRequestData?.status == "pending") FollowRequestStatus = 0;
   }
 
   return res.status(200).json({
-    data: userData,
+    userData,
     userType: userType,
     showEditPage: showEditPage,
     followersCount: followersCount,
@@ -1267,14 +1288,13 @@ homeRoute.get("/user/:userId", async (req, res) => {
     loggedInUserFollowMe: loggedInUserFollowMe,
     userFollowLoggedInUser: userFollowLoggedInUser,
     exerciseArray: exerciseArray,
-    muscles: muscles,
-    muscleCount: muscleCount,
-    exercise: exercise,
-    exerciseCount: exerciseCount,
+    musclesNameArray: musclesNameArray,
+    muscleCountArray: muscleCountArray,
+    exerciseNameArray: exerciseNameArray,
+    exerciseCountArray: exerciseCountArray,
     totalexerciseDone: totalexerciseDone,
-    tottalMuscleTrained: tottalMuscleTrained,
-    isFollowRequestAccepted: isFollowRequestAccepted,
-    isFollowRequestPending: isFollowRequestPending,
+    totalMuscleTrained: totalMuscleTrained,
+    FollowRequestStatus: FollowRequestStatus,
   });
 });
 

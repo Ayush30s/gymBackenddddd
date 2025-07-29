@@ -1,4 +1,5 @@
 const { Router } = require("express");
+const mongoose = require("mongoose");
 const gymModel = require("../Models/gym");
 const userModel = require("../Models/user");
 const ShiftModel = require("../Models/shift");
@@ -77,61 +78,63 @@ followRoute.post(`/unfollow/user/:user_Id`, async (req, res) => {
 
 followRoute.post("/follow/user/:user_Id", async (req, res) => {
   try {
-    const { user_Id } = req.params;
-    const loggedInuser = req.user._id;
-    const userType = req.user.userType;
+    const { user_Id: followId } = req.params;
+    const loggedInUser = req.user._id;
+    const LoggedInUserType = req.user.userType;
 
-    console.log(loggedInuser, user_Id, "------------=--=");
-
-    let followuserType = "userModel";
-    const gymData = await gymModel.findOne({ user: user_Id });
+    let followUserType = "userModel";
+    const gymData = await gymModel.findById(followId);
     if (gymData) {
-      followuserType = "gymModel";
+      followUserType = "gymModel";
     }
 
-    // Get or create the follow document of the user being followed
-    let secondPersonFollowDoc = await followModel.findOne({ user: user_Id });
-    if (!secondPersonFollowDoc) {
-      secondPersonFollowDoc = new followModel({
-        user: user_Id,
-        userType: followuserType,
-        followers: [loggedInuser],
-        followerType: [userType],
+    console.log(2222222222);
+
+    let followPersonFollowDoc = await followModel.findById(followId);
+    if (!followPersonFollowDoc) {
+      // Create a new follow document if not found
+      followPersonFollowDoc = new followModel({
+        user: followId,
+        followers: [loggedInUser],
+        followerType: [LoggedInUserType],
       });
     } else {
-      if (!secondPersonFollowDoc.followers.includes(loggedInuser)) {
-        secondPersonFollowDoc.followers.push(loggedInuser);
-        secondPersonFollowDoc.followerType.push(userType);
+      // Add to followers only if not already added
+      if (!followPersonFollowDoc.followers.includes(loggedInUser)) {
+        followPersonFollowDoc.followers.push(loggedInUser);
+        followPersonFollowDoc.followerType.push(LoggedInUserType);
       }
     }
 
-    await secondPersonFollowDoc.save();
+    console.log(333333333);
 
-    // Get or create the follow document of the logged-in user
-    let loginUserFollowDoc = await followModel.findOne({ user: loggedInuser });
+    await followPersonFollowDoc.save();
+    let loginUserFollowDoc = await followModel.findById(loggedInUser);
+
     if (!loginUserFollowDoc) {
+      // Create a new follow document if not found
       loginUserFollowDoc = new followModel({
-        user: loggedInuser,
-        userType: userType,
-        following: [user_Id],
-        followingType: [followuserType],
+        user: loggedInUser,
+        following: [followId],
+        followingType: [followUserType],
       });
     } else {
-      if (!loginUserFollowDoc.following.includes(user_Id)) {
-        loginUserFollowDoc.following.push(user_Id);
-        loginUserFollowDoc.followingType.push(followuserType);
+      // Add to following only if not already added
+      if (!loginUserFollowDoc.following.includes(followId)) {
+        loginUserFollowDoc.following.push(followId);
+        loginUserFollowDoc.followingType.push(followUserType);
       }
     }
+
+    console.log(4444444444444);
 
     await loginUserFollowDoc.save();
-
     return res.status(200).json({ message: "FOLLOW_REQUEST_SUCCESSFUL" });
   } catch (error) {
     console.error("Follow error:", error);
     return res.status(500).json({ error: "FOLLOW_REQUEST_FAILED" });
   }
 });
-
 followRoute.get("/user/followingList/:user_id", async (req, res) => {
   try {
     const loggedInUser = req.user._id;
