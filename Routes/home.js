@@ -1266,6 +1266,19 @@ homeRoute.get("/user/:userId", async (req, res) => {
     musclesNameArray.push(key);
   });
 
+  let FollowRequestStatus = -1;
+  const followRequestData = await RequestModel.findOne({
+    reqby: req.user._id,
+    reqto: id,
+    requestType: "follow",
+  });
+
+  if (followRequestData) {
+    if (followRequestData?.status == "accepted") {
+      FollowRequestStatus = 1;
+    } else if (followRequestData?.status == "pending") FollowRequestStatus = 0;
+  }
+
   return res.status(200).json({
     userData,
     userType: userType,
