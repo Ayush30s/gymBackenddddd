@@ -196,46 +196,48 @@ workoutRouter.post("/ai-assistance", async (req, res) => {
   }
 });
 
-workoutRouter.post("/exercise/:exerciseName", async (req, res) => {
-  const {
-    time,
-    focusPart,
-    exerciseName,
-    caloriesBurned,
-    difficulty,
-    sets,
-    reps,
-  } = req.body;
+workoutRouter.post("/exercise/:exerciseName?", async (req, res) => {
+  try {
+    let { time, focusPart, caloriesBurned, difficulty, sets, reps } = req.body;
 
-  console.log(
-    time,
-    focusPart,
-    exerciseName,
-    caloriesBurned,
-    difficulty,
-    sets,
-    reps
-  );
-  const userId = req.user._id;
-  const data = await PhyModel.findOneAndUpdate(
-    { user: userId },
-    {
-      $push: {
-        workout: {
-          time: time,
-          focusPart: focusPart,
-          exerciseName: exerciseName,
-          caloriesBurned: caloriesBurned,
-          difficulty: difficulty,
-          sets: sets,
-          reps: reps,
-        },
-      },
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ error: "Unauthorized - User not found" });
     }
-  );
 
-  console.log(data);
-  return res.status(200).json({ message: "EXERCISE SUBMITTED SUCCESSFULLY" });
+    const userId = req.user._id;
+
+    time = Number(time);
+    let exerciseName = req.params.exerciseName || "Not mentioned";
+
+    // Convert fields to proper types
+    sets = Number(sets);
+    if (isNaN(sets)) {
+      return res.status(400).json({ error: "Sets must be a number" });
+    }
+
+    // Build exercise data
+    const exerciseData = {
+      time,
+      focusPart,
+      exerciseName,
+      caloriesBurned: String(caloriesBurned), // Ensure it's a string
+      difficulty,
+      sets,
+      reps: String(reps), // Schema expects a string
+    };
+
+    // Push new workout to user document
+    await PhyModel.findOneAndUpdate(
+      { user: userId },
+      { $push: { workout: exerciseData } },
+      { new: true, upsert: true } // upsert ensures doc is created if not exists
+    );
+
+    return res.status(200).json({ message: "EXERCISE SUBMITTED SUCCESSFULLY" });
+  } catch (err) {
+    console.error(err);
+    return res.status(400).json({ error: "Invalid data format" });
+  }
 });
 
 module.exports = { workoutRouter };

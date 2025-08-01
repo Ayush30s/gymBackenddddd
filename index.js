@@ -24,7 +24,7 @@ const { Server } = require("socket.io");
 
 const io = new Server(http, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: "https://gym-frontendnew-lnl5.vercel.app",
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -37,6 +37,7 @@ const gymIdToSocketId = {};
 const userIdToSocketId = {};
 
 io.on("connection", (socket) => {
+  console.log("new user connected", socket.id);
   socket.on("register", ({ reqby, reqbyType }) => {
     if (reqbyType == "gymModel") gymIdToSocketId[reqby] = socket.id;
     else userIdToSocketId[reqby] = socket.id;
@@ -73,10 +74,11 @@ io.on("connection", (socket) => {
   });
 });
 
-// http://localhost:5173
+// https://gym-frontendnew-lnl5.vercel.app
+// https://gym-frontendnew-lnl5.vercel.app
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "https://gym-frontendnew-lnl5.vercel.app",
     credentials: true,
   })
 );

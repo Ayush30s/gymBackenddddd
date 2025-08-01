@@ -34,18 +34,6 @@ const followSchema = mongoose.Schema(
         enum: ["userModel", "gymModel"],
       },
     ],
-    followRequests: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        refPath: "followerType",
-      },
-    ],
-    followRequestType: [
-      {
-        type: String,
-        enum: ["userModel", "gymModel"],
-      },
-    ],
   },
   { timestamps: true }
 );

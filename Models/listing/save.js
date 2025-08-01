@@ -5,8 +5,13 @@ const saveSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
       required: true,
+      refPath: "userModel",
+    },
+    userModel: {
+      type: String,
+      required: true,
+      enum: ["userModel", "gymModel"],
     },
     listingId: {
       type: mongoose.Schema.Types.ObjectId,
