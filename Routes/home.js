@@ -1280,7 +1280,6 @@ homeRoute.get("/user/:userId", async (req, res) => {
     exerciseNameArray: exerciseNameArray,
     exerciseCountArray: exerciseCountArray,
     totalexerciseDone: totalexerciseDone,
-    tottalMuscleTrained: tottalMuscleTrained,
     totalMuscleTrained: totalMuscleTrained,
     FollowRequestStatus: FollowRequestStatus,
   });
