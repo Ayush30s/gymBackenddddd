@@ -74,14 +74,6 @@ RequestRouter.post("/handleRequest", async (req, res) => {
       });
     }
 
-    // delete older accepted or rejected requests for same pair of users and requestType in the incoming request
-    await RequestModel.deleteMany({
-      reqby,
-      reqto,
-      requestType,
-      status: { $in: ["accepted", "rejected"] },
-    });
-
     // check if a pending rquest already exists between the pair of users and userType in the incoming request
     const existingRequest = await RequestModel.findOne({
       reqby,
@@ -131,6 +123,25 @@ RequestRouter.post("/handleRequest", async (req, res) => {
       path: "reqby",
       select: "fullName",
     });
+
+    // delete older accepted or rejected requests for same pair of users and requestType in the incoming request
+    const finone = await RequestModel.findOne({
+      reqby,
+      reqto,
+      requestType,
+      status: { $in: ["accepted", "rejected"] },
+    });
+
+    console.log("finOne", finone);
+
+    const deleted = await RequestModel.deleteMany({
+      reqby,
+      reqto,
+      requestType,
+      status: { $in: ["accepted", "rejected"] },
+    });
+
+    console.log("deleted", deleted);
 
     return sendResponse(res, 200, {
       success: true,
