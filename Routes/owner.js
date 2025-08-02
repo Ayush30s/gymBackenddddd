@@ -42,6 +42,7 @@ ownerRoute.get("/verify-token", (req, res) => {
 
   try {
     const decoded = JWT.verify(token, process.env.JWT_SECRET);
+    console.log(decoded);
     return res.status(200).json({ user: decoded });
   } catch (err) {
     return res.status(401).json({ message: "Invalid token" });

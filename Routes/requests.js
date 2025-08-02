@@ -5,8 +5,8 @@ const sendResponse = require("../utils/responseHandler");
 const RequestRouter = express.Router();
 
 RequestRouter.get("/allnotifications/:reqAction", async (req, res) => {
-  const userId = req?._id;
-  const userType = req?.userType;
+  const userId = req.user?._id;
+  const userType = req.user.userType;
   const { reqAction } = req.params;
 
   try {
