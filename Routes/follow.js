@@ -2,7 +2,7 @@ const { Router } = require("express");
 const mongoose = require("mongoose");
 const gymModel = require("../Models/gym");
 const userModel = require("../Models/user");
-const ShiftModel = require("../Models/shift");
+const RequestModel = require("../Models/request");
 const followModel = require("../Models/follow");
 
 const followRoute = Router();
@@ -28,6 +28,16 @@ followRoute.post(`/unfollow/user/:user_Id`, async (req, res) => {
   try {
     const { user_Id: removeId } = req.params; // Fix: Use correct param
     const loggedInuser = req.user._id; // Assuming user is authenticated
+
+    //remove the alraedy existing accepted or rejected follow req for given pair of users
+    const dat = await RequestModel.findOneAndDelete({
+      reqby: loggedInuser,
+      reqto: removeId,
+      requestType: "follow",
+      status: { $in: ["accepted", "rejected"] },
+    });
+
+    console.log("dat------------", dat);
 
     // Fetch logged-in user's follow document
     const followDoc = await followModel
@@ -90,7 +100,9 @@ followRoute.post("/follow/user/:user_Id", async (req, res) => {
 
     console.log(2222222222);
 
-    let followPersonFollowDoc = await followModel.findById(followId);
+    let followPersonFollowDoc = await followModel.findOne({ user: followId });
+    console.log("followPersonFollowDoc------", followPersonFollowDoc);
+
     if (!followPersonFollowDoc) {
       // Create a new follow document if not found
       followPersonFollowDoc = new followModel({
@@ -109,7 +121,7 @@ followRoute.post("/follow/user/:user_Id", async (req, res) => {
     console.log(333333333);
 
     await followPersonFollowDoc.save();
-    let loginUserFollowDoc = await followModel.findById(loggedInUser);
+    let loginUserFollowDoc = await followModel.findOne({ user: loggedInUser });
 
     if (!loginUserFollowDoc) {
       // Create a new follow document if not found
