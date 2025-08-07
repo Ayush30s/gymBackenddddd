@@ -291,12 +291,15 @@ homeRoute.get("/gym/dashboard/", async (req, res) => {
 });
 
 homeRoute.get("/gym/:gymId", async (req, res) => {
+  console.log("gymPage,", req.params);
   const userId = req?.user?._id;
   const { gymId } = req?.params;
 
   if (!userId) {
     return res.status(401).json({ error: "UNAUTHORIZED ACCESS" });
   }
+
+  const loggedInUser = await userModel.findOne({ _id: userId });
 
   // If the owner tries to access their own gym, redirect to /home/mygyms
   if (userId == gymId) {
@@ -441,12 +444,23 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
     }
 
     // Determine if the user has joined any shift
-    const allShifts = await ShiftModel.find({ gym: gymId, status: "Active" });
+
+    const shiftsDoc = await ShiftModel.find({ gym: gymId, status: "Active" });
+    let allShifts = [];
     let shiftJoinedIndex = -1;
-    if (isUserJoined && allShifts?.length > 0) {
-      allShifts?.forEach((shift, index) => {
+    if (isUserJoined && shiftsDoc?.length > 0) {
+      shiftsDoc?.forEach((shift, index) => {
         if (shift?.joinedBy?.length > 0) {
           shift.joinedBy?.forEach((user) => {
+            console.log(shift);
+            if (
+              (shift.joinedBy.length < shift.limit &&
+                shift.sex === loggedInUser.gender) ||
+              "All"
+            ) {
+              allShifts.push(shift);
+            }
+
             if (user._id.toString() === userId?.toString()) {
               shiftJoinedIndex = index;
             }
@@ -454,6 +468,8 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
         }
       });
     }
+
+    console.log(allShifts);
 
     let FollowRequestStatus = -1;
     let isPaymentDone = false;
@@ -481,8 +497,6 @@ homeRoute.get("/gym/:gymId", async (req, res) => {
       if (followrequestData.status == "accepted") FollowRequestStatus = 1;
       else if (followrequestData.status == "pending") FollowRequestStatus = 0;
     }
-
-    console.log(daysLeft, "daysLeftdaysLeftdaysLeft");
 
     return res.status(200).json({
       message: "GYM_PAGE_DATA_FETCHED_SUCCESSFUL",
