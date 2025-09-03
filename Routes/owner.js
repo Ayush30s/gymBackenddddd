@@ -152,7 +152,13 @@ ownerRoute.post("/user", async (req, res) => {
       !city ||
       !street
     ) {
-      return res.status(400).send("All fields are required");
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    if (password.length < 6) {
+      return res
+        .status(401)
+        .json({ message: "Password must contain atleast 6 characters" });
     }
 
     // Check if the email is already registered in the gym model or user Model
