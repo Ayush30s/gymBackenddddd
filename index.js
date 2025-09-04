@@ -1,6 +1,7 @@
 require("dotenv").config();
 
 const express = require("express");
+const rateLimit = require("express-rate-limit");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
@@ -20,11 +21,17 @@ const app = express();
 const PORT = 7000;
 const http = require("http").createServer(app);
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per window
+  message: "Too many requests, please try again later.",
+});
+
 const { Server } = require("socket.io");
 
 const io = new Server(http, {
   cors: {
-    origin: "https://gym-frontendnew-lnl5.vercel.app",
+    origin: "http://localhost:5173",
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -75,10 +82,12 @@ io.on("connection", (socket) => {
 });
 
 // https://gym-frontendnew-lnl5.vercel.app
-// https://gym-frontendnew-lnl5.vercel.app
+
+// Apply to all requests
+app.use(limiter);
 app.use(
   cors({
-    origin: "https://gym-frontendnew-lnl5.vercel.app",
+    origin: "http://localhost:5173",
     credentials: true,
   })
 );
