@@ -509,7 +509,7 @@ listingRouter.post("/like/:listingId", async (req, res) => {
     await LikeModel.create({
       listingId,
       userId,
-      ownerModel: req.user.userType,
+      userModel: req?.user?.userType,
     });
 
     return sendResponse(res, 200, {
@@ -559,7 +559,7 @@ listingRouter.post("/report/:listingId", async (req, res) => {
       userId,
       message: message,
       reason: reason,
-      ownerModel: req.user.userType,
+      userModel: req.user.userType,
     });
 
     return sendResponse(res, 200, {
