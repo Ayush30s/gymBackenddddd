@@ -20,6 +20,7 @@ const paymentRouter = require("./Routes/payment.js");
 const app = express();
 const PORT = 7000;
 const http = require("http").createServer(app);
+app.set('trust proxy', 1);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
