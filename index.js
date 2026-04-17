@@ -5,6 +5,7 @@ const rateLimit = require("express-rate-limit");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const http = require("http");
 
 // Routes & Middleware
 const ownerRoute = require("./Routes/owner.js");
@@ -18,19 +19,21 @@ const requestRoute = require("./Routes/requests.js");
 const paymentRouter = require("./Routes/payment.js");
 
 const app = express();
-const PORT = 7000;
-const http = require("http").createServer(app);
-app.set('trust proxy', 1);
+const PORT = process.env.PORT || 7000;
+
+app.set("trust proxy", 1);
+
+const server = http.createServer(app);
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per window
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: "Too many requests, please try again later.",
 });
 
 const { Server } = require("socket.io");
 
-const io = new Server(http, {
+const io = new Server(server, {
   cors: {
     origin: "https://gym-frontendnew-lnl5.vercel.app",
     methods: ["GET", "POST"],
@@ -46,17 +49,15 @@ const userIdToSocketId = {};
 
 io.on("connection", (socket) => {
   console.log("new user connected", socket.id);
+
   socket.on("register", ({ reqby, reqbyType }) => {
-    if (reqbyType == "gymModel") gymIdToSocketId[reqby] = socket.id;
+    if (reqbyType === "gymModel") gymIdToSocketId[reqby] = socket.id;
     else userIdToSocketId[reqby] = socket.id;
   });
 
   socket.on("request", async (data) => {
-    const { reqto, reqby, requestType, reqtoType, reqbyType, status } = data;
-    let reqtoSocketId = gymIdToSocketId[reqto];
-    if (reqtoSocketId == null) {
-      reqtoSocketId = userIdToSocketId[reqto];
-    }
+    const { reqto, requestType } = data;
+    let reqtoSocketId = gymIdToSocketId[reqto] || userIdToSocketId[reqto];
 
     if (reqtoSocketId) {
       io.to(reqtoSocketId).emit(requestType, data);
@@ -66,25 +67,24 @@ io.on("connection", (socket) => {
   });
 
   socket.on("request accepted", (data) => {
-    let userSocketId = userIdToSocketId[data.to._id];
-    if (userSocketId == null) {
-      userSocketId = gymIdToSocketId[data.to._id];
+    const userSocketId =
+      userIdToSocketId[data.to._id] || gymIdToSocketId[data.to._id];
+
+    if (userSocketId) {
+      socket.to(userSocketId).emit("accepted", data);
     }
-    socket.to(userSocketId).emit("accepted", data);
   });
 
   socket.on("request rejected", (data) => {
-    let userSocketId = userIdToSocketId[data.to._id];
-    if (userSocketId == null) {
-      userSocketId = gymIdToSocketId[data.to._id];
+    const userSocketId =
+      userIdToSocketId[data.to._id] || gymIdToSocketId[data.to._id];
+
+    if (userSocketId) {
+      socket.to(userSocketId).emit("rejected", data);
     }
-    socket.to(userSocketId).emit("rejected", data);
   });
 });
 
-// https://gym-frontendnew-lnl5.vercel.app
-
-// Apply to all requests
 app.use(limiter);
 app.use(
   cors({
@@ -95,11 +95,6 @@ app.use(
 app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
-
-mongoose
-  .connect(process.env.MONGO_URL)
-  .then(() => console.log("MongoDB connected Successfully"))
-  .catch((err) => console.log("MongoDB connection error:", err));
 
 app.get("/test", (req, res) => {
   return res.send("You got it!!");
@@ -116,6 +111,20 @@ app.use("/blog", blogRouter);
 app.use("/workout", workoutRouter);
 app.use("/payment", paymentRouter);
 
-http.listen(PORT, () => {
-  console.log("Server with Socket.IO running at PORT:", PORT);
-});
+async function startServer() {
+  try {
+    console.log("MONGO_URL exists:", !!process.env.MONGO_URL);
+
+    await mongoose.connect(process.env.MONGO_URL);
+    console.log("MongoDB connected successfully");
+
+    server.listen(PORT, () => {
+      console.log("Server with Socket.IO running at PORT:", PORT);
+    });
+  } catch (err) {
+    console.error("MongoDB connection error:", err.message);
+    process.exit(1);
+  }
+}
+
+startServer();
