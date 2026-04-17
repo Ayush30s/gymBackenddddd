@@ -51,13 +51,16 @@ io.on("connection", (socket) => {
   console.log("new user connected", socket.id);
 
   socket.on("register", ({ reqby, reqbyType }) => {
-    if (reqbyType === "gymModel") gymIdToSocketId[reqby] = socket.id;
-    else userIdToSocketId[reqby] = socket.id;
+    if (reqbyType === "gymModel") {
+      gymIdToSocketId[reqby] = socket.id;
+    } else {
+      userIdToSocketId[reqby] = socket.id;
+    }
   });
 
   socket.on("request", async (data) => {
     const { reqto, requestType } = data;
-    let reqtoSocketId = gymIdToSocketId[reqto] || userIdToSocketId[reqto];
+    const reqtoSocketId = gymIdToSocketId[reqto] || userIdToSocketId[reqto];
 
     if (reqtoSocketId) {
       io.to(reqtoSocketId).emit(requestType, data);
@@ -83,8 +86,27 @@ io.on("connection", (socket) => {
       socket.to(userSocketId).emit("rejected", data);
     }
   });
+
+  socket.on("disconnect", () => {
+    console.log("user disconnected", socket.id);
+
+    for (const key in gymIdToSocketId) {
+      if (gymIdToSocketId[key] === socket.id) {
+        delete gymIdToSocketId[key];
+        break;
+      }
+    }
+
+    for (const key in userIdToSocketId) {
+      if (userIdToSocketId[key] === socket.id) {
+        delete userIdToSocketId[key];
+        break;
+      }
+    }
+  });
 });
 
+// Middleware
 app.use(limiter);
 app.use(
   cors({
@@ -96,12 +118,24 @@ app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
+// Health / Test routes
 app.get("/test", (req, res) => {
   return res.send("You got it!!");
 });
 
+app.get("/db-check", (req, res) => {
+  return res.status(200).json({
+    mongoConnected: mongoose.connection.readyState === 1,
+    readyState: mongoose.connection.readyState,
+    dbName: mongoose.connection.name || null,
+    host: mongoose.connection.host || null,
+  });
+});
+
+// Auth middleware
 app.use(authenticateUser("token"));
 
+// Routes
 app.use("/listing", listingRouter);
 app.use("/register", ownerRoute);
 app.use("/home", homeRoute);
@@ -111,12 +145,35 @@ app.use("/blog", blogRouter);
 app.use("/workout", workoutRouter);
 app.use("/payment", paymentRouter);
 
+// Mongo connection listeners
+mongoose.connection.on("connected", () => {
+  console.log("Mongoose connected to DB");
+});
+
+mongoose.connection.on("error", (err) => {
+  console.error("Mongoose connection error:", err.message);
+});
+
+mongoose.connection.on("disconnected", () => {
+  console.log("Mongoose disconnected");
+});
+
+// Start server only after DB connection
 async function startServer() {
   try {
     console.log("MONGO_URL exists:", !!process.env.MONGO_URL);
 
-    await mongoose.connect(process.env.MONGO_URL);
+    if (!process.env.MONGO_URL) {
+      throw new Error("MONGO_URL is missing in environment variables");
+    }
+
+    await mongoose.connect(process.env.MONGO_URL, {
+      serverSelectionTimeoutMS: 30000,
+    });
+
     console.log("MongoDB connected successfully");
+    console.log("Mongo readyState:", mongoose.connection.readyState);
+    console.log("Mongo DB Name:", mongoose.connection.name);
 
     server.listen(PORT, () => {
       console.log("Server with Socket.IO running at PORT:", PORT);
